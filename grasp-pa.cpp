@@ -4,14 +4,28 @@ using namespace std;
 
 
 // Representation of a vertex
+// If state = false, it's a spreader, else it's unaware
 struct Vertex
 {
 	int index;
 	int threshold;
 	int degree;
-	int spread_counter;
+	int n_neighbors_spreaders;
+	int state;
 	list<Vertex*> neighbors;
+
 };
+
+typedef struct Vertex Vertex;
+
+// Compare verticed by degree
+bool compare_two_vertices(Vertex* a, Vertex* b) 
+{ 
+	if(a->state == 2 || b->state == 2)
+		return (a->state > b->state);
+
+    return (a->degree > b->degree);
+} 
 
 // Load number of vertices and edges
 void load_graph_size(FILE* input_file, int *n_vertices, int *n_edges)
@@ -35,24 +49,150 @@ void load_edges(FILE* input_file, int n_edges, struct Vertex ** vertices)
 	}
 }
 
+// Print the graph
+void print_graph(int n_vertices, Vertex **vertices){
+	for(int i = 0; i < n_vertices; i++)
+	{
+		cout << vertices[i]-> index << " " << vertices[i]-> degree <<" " << vertices[i]-> threshold << endl;
+		for (list<Vertex*>::iterator it = vertices[i]-> neighbors.begin(); it != vertices[i]-> neighbors.end(); ++it)
+    		cout << (*it)-> index << " ";
+    	cout << endl << endl;
+	}
+}
+
+// Erase vertices status from the last propagation
+void erase_vertices(int n_vertices, Vertex **vertices)
+{
+	for (int i = 0; i < n_vertices; ++i)
+	{
+		vertices[i]-> n_neighbors_spreaders = 0;
+		vertices[i]-> state = 0;
+	}
+}
+
+// Simulate the propagation
+// Return true if it is a peerfect seed set
+void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, int *round)
+{
+	queue<Vertex*> * current_spreaders;
+	current_spreaders = new queue<Vertex*>;
+	
+	while(!(*next_spreaders).empty() && (*n_aware) < n_vertices)
+	{
+		(*round)++;
+		swap(current_spreaders, next_spreaders);
+		
+		while(!(*current_spreaders).empty())
+		{
+			Vertex * v = (*current_spreaders).front();
+			(*current_spreaders).pop();
+			
+			//cout << *round << " " << v-> index << endl;
+			for (list<Vertex*>::iterator it = v-> neighbors.begin(); it != v-> neighbors.end(); ++it)
+			{
+	    		(*it)-> n_neighbors_spreaders++;
+	    		
+	    		if((*it)-> state == 0)
+	    		{
+	    			(*it)-> state = 1;
+	    			(*n_aware)++;
+	    		}
+
+	    		if((*it)-> state == 1 && (*it)-> n_neighbors_spreaders >= (*it)-> threshold)
+	    		{
+	    			(*it)-> state = 2;
+	    			(*next_spreaders).push((*it));
+	    		}
+	    		
+			}
+			
+		}
+		
+	}
+}
+
+// Fitness of cl equals to degree
+void construction_phase(int n_vertices, Vertex ** vertices)
+{
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rlc_size, min_fitness, max_fitness;
+	double alpha;
+	list<Vertex*> seed_set;
+	queue<Vertex*> next_spreaders;
+
+	alpha = 0.15;
+	cl_begin = 0;
+	cl_end  = n_vertices-1;
+	n_aware = 0;
+	round = 0;
+	
+	while(n_aware < n_vertices)
+	{
+		sort(vertices + cl_begin, vertices + n_vertices, compare_two_vertices);
+
+		while(cl_begin <= cl_end && vertices[cl_begin]->state == 2)
+			cl_begin++;
+
+		if(cl_begin > cl_end)
+			cl_begin = cl_end;
+
+		max_fitness = vertices[cl_begin]-> degree;
+		min_fitness = max_fitness - int(alpha * (max_fitness - vertices[cl_end] -> degree));
+
+		rcl_begin = cl_begin;
+		rcl_end = cl_begin;
+		
+		while(rcl_end <= cl_end && vertices[rcl_end]-> degree >= min_fitness)
+			rcl_end++;
+		
+		if(rcl_end > cl_end)
+			rcl_end = cl_end;
+
+		rlc_size = rcl_end - rcl_begin + 1;
+		srand (time(NULL));
+		int v_chosen = (rand()%rlc_size) + rcl_begin;
+
+		if(vertices[v_chosen]-> state == 0)
+			n_aware++;
+
+		vertices[v_chosen]-> state = 2;
+		
+		seed_set.push_back(vertices[v_chosen]);
+		next_spreaders.push(vertices[v_chosen]);
+
+		propagate(n_vertices, &next_spreaders, &n_aware, &round);
+
+	}
+
+	
+	cout << "Seed set: ";
+	for (list<Vertex*>::iterator it = seed_set.begin(); it != seed_set.end(); ++it)
+		cout << (*it)-> index << " ";
+	
+	cout << "\nSeed set size = " << seed_set.size() << "\nN vertices = " << n_vertices << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+
+}
+
 int main (int argc, char *argv[])
 {
 	string input_path;
 	FILE *input_file;
-	int n_vertices, n_edges;
-
 	input_path = argv[1];
 	input_file = fopen(input_path.c_str(), "r");
+
+
+	int n_vertices, n_edges;
+
 	load_graph_size(input_file, &n_vertices, &n_edges);
-	struct Vertex * vertices[n_vertices];
+	Vertex * vertices[n_vertices];
 
 	// Initialize the array ofvertices
 	for(int i = 0; i < n_vertices; i++)
 	{
 		vertices[i] = new Vertex;
 		vertices[i]-> index = i;
-		vertices[i]-> spread_counter = 0;
+		vertices[i]-> n_neighbors_spreaders = 0;
 		vertices[i]-> degree = 0;
+		vertices[i]-> state = 0;
 	}
 
 	// Load edges
@@ -64,16 +204,9 @@ int main (int argc, char *argv[])
 		vertices[i]-> threshold = floor((double)vertices[i]-> degree / 2.0);
 	}
 
-	//printing graph
-	/*
-	for(int i = 0; i < n_vertices; i++)
-	{
-		cout << vertices[i]-> index << " " << vertices[i]-> degree <<" " << vertices[i]-> threshold << endl;
-		for (list<Vertex*>::iterator it = vertices[i]-> neighbors.begin(); it != vertices[i]-> neighbors.end(); ++it)
-    		cout << (*it)-> index << " ";
-    	cout << endl << endl;
-	}
-	*/
+
+	construction_phase(n_vertices, vertices);
+	erase_vertices(n_vertices, vertices);
 
 	return 0;
 
