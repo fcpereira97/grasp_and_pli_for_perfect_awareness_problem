@@ -87,7 +87,6 @@ void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, in
 			Vertex * v = (*current_spreaders).front();
 			(*current_spreaders).pop();
 			
-			//cout << *round << " " << v-> index << endl;
 			for (list<Vertex*>::iterator it = v-> neighbors.begin(); it != v-> neighbors.end(); ++it)
 			{
 	    		(*it)-> n_neighbors_spreaders++;
@@ -107,16 +106,14 @@ void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, in
 			}
 			
 		}
-		
 	}
 }
 
 // Fitness of cl equals to degree
-void construction_phase(int n_vertices, Vertex ** vertices)
+void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rlc_size, min_fitness, max_fitness;
 	double alpha;
-	list<Vertex*> seed_set;
 	queue<Vertex*> next_spreaders;
 
 	alpha = 0.15;
@@ -156,20 +153,97 @@ void construction_phase(int n_vertices, Vertex ** vertices)
 
 		vertices[v_chosen]-> state = 2;
 		
-		seed_set.push_back(vertices[v_chosen]);
+		(*seed_set).push_back(vertices[v_chosen]);
 		next_spreaders.push(vertices[v_chosen]);
-
 		propagate(n_vertices, &next_spreaders, &n_aware, &round);
 
 	}
 
 	
 	cout << "Seed set: ";
-	for (list<Vertex*>::iterator it = seed_set.begin(); it != seed_set.end(); ++it)
-		cout << (*it)-> index << " ";
+	for (int i = 0; i < (*seed_set).size(); i++)
+		cout << (*seed_set)[i]-> index << " ";
 	
-	cout << "\nSeed set size = " << seed_set.size() << "\nN vertices = " << n_vertices << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
+	cout << "\nSeed set size = " << (*seed_set).size() << "\nN vertices = " << n_vertices << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+
+	erase_vertices(n_vertices, vertices);
+	queue<Vertex*> next_spreaders_aux;
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		(*seed_set)[i]-> state = 2;
+		next_spreaders_aux.push((*seed_set)[i]);
+	}
+
+	n_aware = (*seed_set).size();
+	round = 0;
+
+	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
+	cout << "N aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+
+}
+
+void first_improving(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
+{
+	vector<Vertex*> *seed_set_als;
+	seed_set_als = new vector
+	<Vertex*>;
+	
+	Vertex *v1, *v2;
+	int n_aware, round;
+
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+
+		v1 = (*seed_set)[i];
+		erase_vertices(n_vertices, vertices);
+		queue<Vertex*> next_spreaders;
+
+		for (int j = 0; j < (*seed_set).size(); j++)
+		{
+			v2 = (*seed_set)[j];
+			if(v1-> index != v2->index)
+			{
+				next_spreaders.push(v2);
+				v2->state = 2;
+			}
+		}
+
+		n_aware = next_spreaders.size();
+		round = 0;
+		propagate(n_vertices, &next_spreaders, &n_aware, &round);
+
+		if(n_aware != n_vertices)
+		{
+			(*seed_set_als).push_back(v1);
+		}
+		else
+		{
+			(*seed_set).erase((*seed_set).begin() + i);
+			i--;
+		}
+	}
+	
+	swap(seed_set, seed_set_als);
+	erase_vertices(n_vertices, vertices);
+
+	cout << "Seed set after ls: ";
+	for (int i = 0; i < (*seed_set).size(); i++)
+		cout << (*seed_set)[i]-> index << " ";
+	
+	cout << "\nSeed set size after ls = " << (*seed_set).size();
+	queue<Vertex*> next_spreaders_aux;
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		(*seed_set)[i]-> state = 2;
+		next_spreaders_aux.push((*seed_set)[i]);
+	}
+
+	n_aware = next_spreaders_aux.size();
+	round = 0;
+	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
+	cout << "\nN aware after ls = " << n_aware << endl;
+	
 }
 
 int main (int argc, char *argv[])
@@ -184,6 +258,7 @@ int main (int argc, char *argv[])
 
 	load_graph_size(input_file, &n_vertices, &n_edges);
 	Vertex * vertices[n_vertices];
+	vector<Vertex*> seed_set;
 
 	// Initialize the array ofvertices
 	for(int i = 0; i < n_vertices; i++)
@@ -204,9 +279,8 @@ int main (int argc, char *argv[])
 		vertices[i]-> threshold = floor((double)vertices[i]-> degree / 2.0);
 	}
 
-
-	construction_phase(n_vertices, vertices);
-	erase_vertices(n_vertices, vertices);
+	construction_phase(n_vertices, vertices, &seed_set);
+	first_improving(n_vertices, vertices, &seed_set);
 
 	return 0;
 
