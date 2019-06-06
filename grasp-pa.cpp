@@ -72,6 +72,9 @@ void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertice
 			graph[v2_index][v1_index] = true;
 		}
 	}
+
+	//printf("Real vertices = %d\n", next_id);
+	//printf("Real edges = %d\n\n", real_edges);
 }
 
 // Print the graph
@@ -213,7 +216,7 @@ void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *see
 		cout << (*seed_set)[i]-> index << " ";
 	*/
 
-	cout << "\nSeed set size = " << (*seed_set).size() << "\nN vertices = " << n_vertices << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
 	erase_vertices(n_vertices, vertices);
 	queue<Vertex*> next_spreaders_aux;
@@ -231,34 +234,42 @@ void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *see
 
 }
 
-void first_improving(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
+void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
 {
 	vector<Vertex*> *seed_set_als;
 	seed_set_als = new vector <Vertex*>;
 	
 	Vertex *v1, *v2;
-	int n_aware, round;
+	int n_aware, round, limit;
 
-	for (int i = 0; i < (*seed_set).size(); i++)
+	limit = (*seed_set).size()*0.5;
+
+	for (int i = 0; i < int((*seed_set).size()); i++)
 	{
-		printf("%d\n", i);
+		//printf("%d\n", i);
 		v1 = (*seed_set)[i];
 		erase_vertices(n_vertices, vertices);
 		queue<Vertex*> next_spreaders;
-
-		for (int j = 0; j < (*seed_set).size(); j++)
+		if(i < limit)
 		{
-			v2 = (*seed_set)[j];
-			if(v1-> index != v2->index)
+			for (int j = 0; j < (*seed_set).size(); j++)
 			{
-				next_spreaders.push(v2);
-				v2->state = 2;
+				v2 = (*seed_set)[j];
+				if(v1-> index != v2->index)
+				{
+					next_spreaders.push(v2);
+					v2->state = 2;
+				}
 			}
-		}
 
-		n_aware = next_spreaders.size();
-		round = 0;
-		propagate(n_vertices, &next_spreaders, &n_aware, &round);
+			n_aware = next_spreaders.size();
+			round = 0;
+			propagate(n_vertices, &next_spreaders, &n_aware, &round);
+		}
+		else
+		{
+			n_aware = -1;
+		}
 
 		if(n_aware != n_vertices)
 		{
@@ -274,10 +285,68 @@ void first_improving(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_
 	swap(seed_set, seed_set_als);
 	erase_vertices(n_vertices, vertices);
 
+	/*
 	cout << "\nSeed set after ls: ";
 	for (int i = 0; i < (*seed_set).size(); i++)
 		cout << (*seed_set)[i]-> index << " ";
+	*/
+
+	cout << "\nSeed set size after ls = " << (*seed_set).size();
+	queue<Vertex*> next_spreaders_aux;
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		(*seed_set)[i]-> state = 2;
+		next_spreaders_aux.push((*seed_set)[i]);
+	}
+
+	n_aware = next_spreaders_aux.size();
+	round = 0;
+	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
+	cout << "\nN aware after ls = " << n_aware << endl;
 	
+}
+
+
+void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
+{
+
+	Vertex *spreader;
+	int n_aware, round;
+
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		spreader = (*seed_set)[i];
+		bool remove = true;
+		if(spreader-> threshold > 1)
+		{			
+			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
+			{
+				if( ((*neigh)-> state == 1 && (*neigh)-> n_spreader_neighs == 1) || 
+					((*neigh)-> state == 2 && (*neigh)-> n_spreader_neighs == (*neigh)-> threshold))
+				{
+					remove = false;
+					break;
+				}
+			}
+		}
+		if(remove)
+		{
+			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
+			{
+				(*neigh)-> n_spreader_neighs--;
+			}
+			(*seed_set).erase((*seed_set).begin() + i);
+		}
+	}
+	
+	erase_vertices(n_vertices, vertices);
+
+	/*
+	cout << "\nSeed set after ls: ";
+	for (int i = 0; i < (*seed_set).size(); i++)
+		cout << (*seed_set)[i]-> index << " ";
+	*/
+
 	cout << "\nSeed set size after ls = " << (*seed_set).size();
 	queue<Vertex*> next_spreaders_aux;
 	for (int i = 0; i < (*seed_set).size(); i++)
@@ -298,9 +367,10 @@ int main (int argc, char *argv[])
 
 	string input_path;
 	FILE *input_file;
-	input_path = argv[2];
+	input_path = argv[3];
 	input_file = fopen(input_path.c_str(), "r");
-	char ls = atoi(argv[1]);
+	int construction_phase_flag = atoi(argv[1]);
+	int local_search_phase_flag = atoi(argv[2]);
 	int n_vertices, n_edges;
 
 	load_graph_size(input_file, &n_vertices, &n_edges);
@@ -316,21 +386,32 @@ int main (int argc, char *argv[])
 		vertices[i]-> degree = 0;
 		vertices[i]-> state = 0;
 	}
+	cout << "File = " << input_path << endl;
+	cout << "N vertices = " << n_vertices << endl;
+	cout << "N edges = " << n_edges << endl << endl;
 
 	// Load edges
-	cout << "Loading graph...\n\n";
+	cout << "Loading graph...\n";
 	load_edges(input_file, n_vertices, n_edges, vertices);
 	initialize_vertices(n_vertices, vertices);
 
-	cout << "Graph loaded!\n\n";
-	cout << "Starting construction phase!\n\n";
-	construction_phase(n_vertices, vertices, &seed_set);
+	cout << "Graph loaded!\n";
+	cout << "Starting construction phase!\n";
+	if(construction_phase_flag == 1)
+		construction_phase(n_vertices, vertices, &seed_set);
 
-	if(ls)
+	if(local_search_phase_flag == 1)
 	{
-		cout << "\n\nStarting local search phase\n\n";
-		first_improving(n_vertices, vertices, &seed_set);
+		cout << "\n\nStarting local search phase\n";
+		first_improving1(n_vertices, vertices, &seed_set);
 	}
+	else if(local_search_phase_flag == 2)
+	{
+		cout << "\n\nStarting local search phase\n";
+		first_improving2(n_vertices, vertices, &seed_set);
+	}
+
+	cout << endl << "-------------------" << endl << endl;
 
 	return 0;
 
