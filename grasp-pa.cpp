@@ -11,9 +11,12 @@ struct Vertex
 	int threshold;
 	int degree;
 	int n_spreader_neighs;
+	int n_seed_neighs;
 	int n_aware_neighs;
 	int n_useful_edges;
 	int state;
+	bool seed;
+	int round_become_spreader;
 	list<Vertex*> neighbors;
 
 };
@@ -73,8 +76,8 @@ void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertice
 		}
 	}
 
-	//printf("Real vertices = %d\n", next_id);
-	//printf("Real edges = %d\n\n", real_edges);
+	cout << "Real vertices = " << next_id << endl;
+	cout << "Real edges = " << real_edges << endl << endl;
 }
 
 // Print the graph
@@ -89,14 +92,17 @@ void print_graph(int n_vertices, Vertex **vertices){
 }
 
 // Erase vertices status from the last propagation
-void erase_vertices(int n_vertices, Vertex **vertices)
+void erase_propagation(int n_vertices, Vertex **vertices)
 {
 	for (int i = 0; i < n_vertices; ++i)
 	{
 		vertices[i]-> n_spreader_neighs = 0;
+		vertices[i]-> n_seed_neighs = 0;
 		vertices[i]-> n_aware_neighs = 0;
 		vertices[i]-> n_useful_edges = vertices[i]->degree;
 		vertices[i]-> state = 0;
+		vertices[i]-> seed = false;
+		vertices[i]-> round_become_spreader = 0;
 	}
 }
 
@@ -108,7 +114,7 @@ void initialize_vertices(int n_vertices, Vertex **vertices)
 		vertices[i]-> degree = vertices[i]-> neighbors.size();
 		vertices[i]-> threshold = floor((double)vertices[i]-> degree / 2.0);
 	}
-	erase_vertices(n_vertices, vertices);
+	erase_propagation(n_vertices, vertices);
 }
 
 // Simulate the propagation
@@ -149,8 +155,12 @@ void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, in
 	    		if((*neigh)-> state == 1 && (*neigh)-> n_spreader_neighs >= (*neigh)-> threshold)
 	    		{
 	    			(*neigh)-> state = 2;
+	    			(*neigh)-> round_become_spreader = *round;
 	    			(*next_spreaders).push((*neigh));
 	    		}
+
+	    		if(spreader-> seed)
+	    			(*neigh)-> n_seed_neighs++;
 	    		
 			}
 			
@@ -159,7 +169,7 @@ void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, in
 }
 
 // Fitness of cl equals to degree
-void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set)
+void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_fitness, max_fitness;
 	double alpha;
@@ -202,7 +212,7 @@ void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *see
 			n_aware++;
 
 		vertices[v_chosen]-> state = 2;
-		
+		vertices[v_chosen]-> seed = true;
 		(*seed_set).push_back(vertices[v_chosen]);
 		next_spreaders.push(vertices[v_chosen]);
 
@@ -210,19 +220,20 @@ void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *see
 		//cout << "ROUND :" << round << endl;
 	}
 
-	/*
+	/*	
 	cout << "Seed set: ";
 	for (int i = 0; i < (*seed_set).size(); i++)
 		cout << (*seed_set)[i]-> index << " ";
 	*/
-
+	
 	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
-	erase_vertices(n_vertices, vertices);
+	erase_propagation(n_vertices, vertices);
 	queue<Vertex*> next_spreaders_aux;
 	for (int i = 0; i < (*seed_set).size(); i++)
 	{
 		(*seed_set)[i]-> state = 2;
+		(*seed_set)[i]-> seed = true;
 		next_spreaders_aux.push((*seed_set)[i]);
 	}
 
@@ -232,9 +243,50 @@ void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *see
 	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
 	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
 
+	*sol_value = (*seed_set).size();
 }
 
-void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
+void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
+{
+	int n_aware, round, neigh_seeds;
+	Vertex * seed;
+	neigh_seeds = 0;
+
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		seed = (*seed_set)[i];
+		//cout << seed-> n_spreader_neighs << " " << seed-> threshold << endl;
+		if(seed-> threshold > 1 && seed-> n_seed_neighs >= seed-> threshold)
+		{
+	    	(*seed_set).erase((*seed_set).begin() + i);
+	    }
+	}
+
+	erase_propagation(n_vertices, vertices);
+
+	/*
+	cout << "\nSeed set after ls: ";
+	for (int i = 0; i < (*seed_set).size(); i++)
+		cout << (*seed_set)[i]-> index << " ";
+	*/
+
+	cout << "\nSeed set size after ls = " << (*seed_set).size();
+	queue<Vertex*> next_spreaders_aux;
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		(*seed_set)[i]-> state = 2;
+		next_spreaders_aux.push((*seed_set)[i]);
+	}
+
+	n_aware = next_spreaders_aux.size();
+	round = 0;
+	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
+	cout << "\nN aware after ls = " << n_aware << endl;
+
+	*sol_value = (*seed_set).size();
+}
+
+void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
 {
 	vector<Vertex*> *seed_set_als;
 	seed_set_als = new vector <Vertex*>;
@@ -242,14 +294,16 @@ void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 	Vertex *v1, *v2;
 	int n_aware, round, limit;
 
-	limit = (*seed_set).size()*0.5;
+	limit = (*seed_set).size();
 
-	for (int i = 0; i < int((*seed_set).size()); i++)
+	for (int i = 0; i < (*seed_set).size(); i++)
 	{
-		//printf("%d\n", i);
+		//printf("%d %d\n", i, int((*seed_set).size())); fflush(stdout);
+
 		v1 = (*seed_set)[i];
-		erase_vertices(n_vertices, vertices);
+		erase_propagation(n_vertices, vertices);
 		queue<Vertex*> next_spreaders;
+
 		if(i < limit)
 		{
 			for (int j = 0; j < (*seed_set).size(); j++)
@@ -283,7 +337,7 @@ void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 	}
 	
 	swap(seed_set, seed_set_als);
-	erase_vertices(n_vertices, vertices);
+	erase_propagation(n_vertices, vertices);
 
 	/*
 	cout << "\nSeed set after ls: ";
@@ -304,22 +358,23 @@ void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
 	cout << "\nN aware after ls = " << n_aware << endl;
 	
+	*sol_value = (*seed_set).size();
 }
 
 
-void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set)
+void first_improving3(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
 {
 
-	Vertex *spreader;
+	Vertex *seed;
 	int n_aware, round;
 
 	for (int i = 0; i < (*seed_set).size(); i++)
 	{
-		spreader = (*seed_set)[i];
+		seed = (*seed_set)[i];
 		bool remove = true;
-		if(spreader-> threshold > 1)
+		if(seed-> threshold > 1)
 		{			
-			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
+			for (list<Vertex*>::iterator neigh = seed-> neighbors.begin(); neigh != seed-> neighbors.end(); ++neigh)
 			{
 				if( ((*neigh)-> state == 1 && (*neigh)-> n_spreader_neighs == 1) || 
 					((*neigh)-> state == 2 && (*neigh)-> n_spreader_neighs == (*neigh)-> threshold))
@@ -331,7 +386,7 @@ void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 		}
 		if(remove)
 		{
-			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
+			for (list<Vertex*>::iterator neigh = seed-> neighbors.begin(); neigh != seed-> neighbors.end(); ++neigh)
 			{
 				(*neigh)-> n_spreader_neighs--;
 			}
@@ -339,7 +394,7 @@ void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 		}
 	}
 	
-	erase_vertices(n_vertices, vertices);
+	erase_propagation(n_vertices, vertices);
 
 	/*
 	cout << "\nSeed set after ls: ";
@@ -360,6 +415,7 @@ void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed
 	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round);
 	cout << "\nN aware after ls = " << n_aware << endl;
 	
+	*sol_value = (*seed_set).size();
 }
 
 int main (int argc, char *argv[])
@@ -367,15 +423,20 @@ int main (int argc, char *argv[])
 
 	string input_path;
 	FILE *input_file;
-	input_path = argv[3];
+	FILE *output_file;
+	input_path = argv[4];
 	input_file = fopen(input_path.c_str(), "r");
+	output_file = fopen("output.csv", "a");
+
 	int construction_phase_flag = atoi(argv[1]);
 	int local_search_phase_flag = atoi(argv[2]);
-	int n_vertices, n_edges;
+	int n_vertices, n_edges, best_sol_value, iterations_limit;
 
 	load_graph_size(input_file, &n_vertices, &n_edges);
 	Vertex * vertices[n_vertices];
-	vector<Vertex*> seed_set;
+	
+	iterations_limit = atoi(argv[3]);
+	best_sol_value = INT_MAX;
 
 	// Initialize the array ofvertices
 	for(int i = 0; i < n_vertices; i++)
@@ -394,24 +455,39 @@ int main (int argc, char *argv[])
 	cout << "Loading graph...\n";
 	load_edges(input_file, n_vertices, n_edges, vertices);
 	initialize_vertices(n_vertices, vertices);
-
 	cout << "Graph loaded!\n";
-	cout << "Starting construction phase!\n";
-	if(construction_phase_flag == 1)
-		construction_phase(n_vertices, vertices, &seed_set);
 
-	if(local_search_phase_flag == 1)
+	for(int i = 0; i < iterations_limit; i++)
 	{
-		cout << "\n\nStarting local search phase\n";
-		first_improving1(n_vertices, vertices, &seed_set);
-	}
-	else if(local_search_phase_flag == 2)
-	{
-		cout << "\n\nStarting local search phase\n";
-		first_improving2(n_vertices, vertices, &seed_set);
+		int sol_value = 0;
+		vector<Vertex*> seed_set;
+
+		cout << "Starting construction phase!\n";
+		if(construction_phase_flag == 1)
+			construction_phase(n_vertices, vertices, &seed_set, &sol_value);
+
+		if(local_search_phase_flag == 1)
+		{
+			cout << "\n\nStarting local search phase\n";
+			first_improving1(n_vertices, vertices, &seed_set, &sol_value);
+		}
+		else if(local_search_phase_flag == 2)
+		{
+			cout << "\n\nStarting local search phase\n";
+			first_improving1(n_vertices, vertices, &seed_set, &sol_value);
+			
+			cout << "\n\nStarting local search phase\n";
+			first_improving2(n_vertices, vertices, &seed_set, &sol_value);
+		}
+
+		cout << endl << "-------------------" << endl << endl;
+
+		erase_propagation(n_vertices, vertices);
+		if(sol_value < best_sol_value)
+			best_sol_value = sol_value;
 	}
 
-	cout << endl << "-------------------" << endl << endl;
+	fprintf(output_file, "%s, %d\n", input_path.c_str(), best_sol_value);
 
 	return 0;
 
