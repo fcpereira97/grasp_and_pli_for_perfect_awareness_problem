@@ -52,17 +52,17 @@ void load_graph_size(FILE* input_file, int *n_vertices, int *n_edges)
 }
 
 // Load the vertices and edges
-void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertices)
+void load_edges(FILE* input_file, int n_vertices, int * n_edges, Vertex ** vertices)
 {
 	int next_index = 0; // Index to be assigned to the next vertex discovered
 	int n_non_duplicated_edges = 0; // Number of non-duplicated edges
 	int v1_index, v2_index, v1_id, v2_id;
 
-	vector<pair<int, int>> edges(n_edges); // Array of edges
+	vector<pair<int, int>> edges(*n_edges); // Array of edges
 	map<int, int> vertices_map; // Hash for the id from input to index assinged to the vertex
 
 	// Load each pair of edges. The first vertex is the one with less id from input
-	for(int i = 0; i < n_edges; i++) 
+	for(int i = 0; i < *n_edges; i++) 
 	{
 		fscanf(input_file, "%d %d", &v1_id, &v2_id);
 		edges[i] = make_pair(min(v1_id, v2_id), max(v1_id, v2_id));
@@ -72,7 +72,7 @@ void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertice
 	sort(edges.begin(), edges.end(), compare_two_edges_by_index);
 
 	// For each edge loaded
-	for(int i = 0; i < n_edges; i++)
+	for(int i = 0; i < *n_edges; i++)
 	{
 		// If the edge is non-duplicated do
 		if(i == 0 || (edges[i].first != edges[i-1].first) || (edges[i].second != edges[i-1].second))
@@ -104,6 +104,7 @@ void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertice
 
 		}
 	}
+	*n_edges = n_non_duplicated_edges;
 	//cout << n_non_duplicated_edges << endl;
 }
 
@@ -229,24 +230,18 @@ void propate_from_initial_state(int n_vertices, Vertex **vertices, vector<Vertex
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+void standard_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
 	double alpha; // Alpha variable
 	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
 
-	alpha = 0.20;
+	alpha = 0.15;
 	cl_begin = 0;
 	cl_end  = n_vertices-1;
 	n_aware = 0;
 	round = 0;
-
-	if(n_vertices < 100000)
-		n_seeds_per_insertion = 1;
-	else if(n_vertices < 1000000)
-		n_seeds_per_insertion = 10;
-	else
-		n_seeds_per_insertion = 100;
+	n_seeds_per_insertion = 1;
 
 	// Turn to seeds all vertices that has degree equals to 0
 	for(int i = 0; i < n_vertices; i++)
@@ -264,6 +259,7 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 	// While the seed set is still a infeasible solutions, do
 	while(n_aware < n_vertices)
 	{
+
 		// Sort vertices by its numbers of unaware neighs
 		sort(vertices, vertices + cl_end + 1, compare_two_vertices_by_unaware_neighs);
 
@@ -275,8 +271,7 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 		max_contribution = vertices[cl_begin]-> n_unaware_neighs;
 		min_contribution = max_contribution - int(alpha * (max_contribution - vertices[cl_end] -> n_unaware_neighs));
 		
-		//cout << (*seed_set).size() << " " << n_aware << " " << max_contribution <<" " << round << " " << n_vertices << endl;
-
+		//cout << (*seed_set).size() << " " << n_aware << " " << max_contribution <<" " << round << " " << n_vertices << " " << n_seeds_per_insertion << endl;
 
 		// Determine the range of the RCL
 		rcl_begin = cl_begin;
@@ -288,31 +283,27 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 		// Select n_seeds_per_insertion vertices from RCL at random
 
 		shuffle(vertices, vertices + rcl_end + 1, default_random_engine(chrono::system_clock::now().time_since_epoch().count()));
+		for(int i = rcl_begin; i < n_seeds_per_insertion && i <= rcl_end; i++)
 		{
-			for(int i = rcl_begin; i < n_seeds_per_insertion && i <= rcl_end; i++)
+			int v_chosen = i;
+			// If the vertex selected is unaware
+			if(vertices[v_chosen]-> state == 0)
 			{
+				n_aware++; // Update total aware
 
-				int v_chosen = i;
-
-				// If the vertex selected is unaware
-				if(vertices[v_chosen]-> state == 0)
+				// Update number of unaware neighs of selected vertex neighs
+				for (list<Vertex*>::iterator neigh = vertices[v_chosen]-> neighbors.begin(); neigh != vertices[v_chosen]-> neighbors.end(); ++neigh)
 				{
-					n_aware++; // Update total aware
-
-					// Update number of unaware neighs of selected vertex neighs
-					for (list<Vertex*>::iterator neigh = vertices[v_chosen]-> neighbors.begin(); neigh != vertices[v_chosen]-> neighbors.end(); ++neigh)
-					{
-						(*neigh)-> n_aware_neighs++;
-			    		(*neigh)-> n_unaware_neighs--;
-					}
+					(*neigh)-> n_aware_neighs++;
+		    		(*neigh)-> n_unaware_neighs--;
 				}
-
-				// Turn selected vertex a seed
-				vertices[v_chosen]-> state = 2;
-				vertices[v_chosen]-> isSeed = true;
-				(*seed_set).push_back(vertices[v_chosen]);
-				new_seeds.push(vertices[v_chosen]);
 			}
+
+			// Turn selected vertex a seed
+			vertices[v_chosen]-> state = 2;
+			vertices[v_chosen]-> isSeed = true;
+			(*seed_set).push_back(vertices[v_chosen]);
+			new_seeds.push(vertices[v_chosen]);
 		}
 
 		// Continue the propagation with the new seeds 
@@ -329,6 +320,205 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 
 	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
 }
+
+// Standard method of the GRASP construction phase
+// A feasible solution is built by inserting new vertices into the seed set and propagating
+// At each insertion, the propagation continues from the last state
+// New vertices are inserted into the seed set until the solution becomes feasible
+void random_plus_greedy_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+{
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
+	int p_steps, steps;
+	double alpha; // Alpha variable
+	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
+
+	alpha = 1;
+	cl_begin = 0;
+	cl_end  = n_vertices-1;
+	n_aware = 0;
+	round = 0;
+	n_seeds_per_insertion = 1;
+	p_steps = 0.01 * n_vertices;
+	steps = 0;
+
+	// Turn to seeds all vertices that has degree equals to 0
+	for(int i = 0; i < n_vertices; i++)
+	{
+		if(vertices[i]-> degree == 0)
+		{
+			vertices[i]-> state = 2;
+			vertices[i]-> isSeed = true;
+			(*seed_set).push_back(vertices[i]);
+			new_seeds.push(vertices[i]);
+			n_aware++;
+		}
+	}
+	
+	// While the seed set is still a infeasible solutions, do
+	while(n_aware < n_vertices)
+	{
+		if(steps == p_steps)
+		{
+			alpha = 0;
+		}
+
+		// Sort vertices by its numbers of unaware neighs
+		sort(vertices, vertices + cl_end + 1, compare_two_vertices_by_unaware_neighs);
+
+		// Determine the range of the CL
+		while(cl_end > cl_begin && vertices[cl_end]->n_unaware_neighs == 0)
+			cl_end--;
+
+		// Calculate the maximum and the minimum contribution values in function to the alpha
+		max_contribution = vertices[cl_begin]-> n_unaware_neighs;
+		min_contribution = max_contribution - int(alpha * (max_contribution - vertices[cl_end] -> n_unaware_neighs));
+		
+		//cout << steps << " " <<(*seed_set).size() << " " << n_aware << " " << max_contribution <<" " << round << " " << n_vertices << " " << n_seeds_per_insertion << endl;
+
+		// Determine the range of the RCL
+		rcl_begin = cl_begin;
+		rcl_end = cl_begin;
+		while(rcl_end < cl_end && vertices[rcl_end+1]-> n_unaware_neighs >= min_contribution)
+			rcl_end++;
+		rcl_size = rcl_end - rcl_begin + 1;
+
+		// Select n_seeds_per_insertion vertices from RCL at random
+
+		shuffle(vertices, vertices + rcl_end + 1, default_random_engine(chrono::system_clock::now().time_since_epoch().count()));
+		
+		for(int i = rcl_begin; i < n_seeds_per_insertion && i <= rcl_end; i++)
+		{
+			int v_chosen = i;
+
+			// If the vertex selected is unaware
+			if(vertices[v_chosen]-> state == 0)
+			{
+				n_aware++; // Update total aware
+
+				// Update number of unaware neighs of selected vertex neighs
+				for (list<Vertex*>::iterator neigh = vertices[v_chosen]-> neighbors.begin(); neigh != vertices[v_chosen]-> neighbors.end(); ++neigh)
+				{
+					(*neigh)-> n_aware_neighs++;
+		    		(*neigh)-> n_unaware_neighs--;
+				}
+			}
+
+			// Turn selected vertex a seed
+			vertices[v_chosen]-> state = 2;
+			vertices[v_chosen]-> isSeed = true;
+			(*seed_set).push_back(vertices[v_chosen]);
+			new_seeds.push(vertices[v_chosen]);
+		}
+
+		// Continue the propagation with the new seeds 
+		propagate_from_a_state(n_vertices, &new_seeds, &n_aware, &round, 1);
+
+		steps++;
+	}
+	
+	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+
+	//Propagate from initial state
+	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
+
+	// Update the solution value
+	*sol_value = (*seed_set).size(); 
+
+	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+}
+
+// Standard method of the GRASP construction phase
+// A feasible solution is built by inserting new vertices into the seed set and propagating
+// At each insertion, the propagation continues from the last state
+// New vertices are inserted into the seed set until the solution becomes feasible
+void sampled_greedy_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+{
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, n_seeds_per_insertion;
+	int p_size;
+	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
+
+	cl_begin = 0;
+	cl_end  = n_vertices-1;
+	n_aware = 0;
+	round = 0;
+	n_seeds_per_insertion = 1;
+	p_size = 0.1 * n_vertices;
+
+	// Turn to seeds all vertices that has degree equals to 0
+	for(int i = 0; i < n_vertices; i++)
+	{
+		if(vertices[i]-> degree == 0)
+		{
+			vertices[i]-> state = 2;
+			vertices[i]-> isSeed = true;
+			(*seed_set).push_back(vertices[i]);
+			new_seeds.push(vertices[i]);
+			n_aware++;
+		}
+	}
+	
+	// While the seed set is still a infeasible solutions, do
+	while(n_aware < n_vertices)
+	{
+
+		// Sort vertices by its numbers of unaware neighs
+		sort(vertices, vertices + cl_end + 1, compare_two_vertices_by_unaware_neighs);
+
+		// Determine the range of the CL
+		while(cl_end > cl_begin && vertices[cl_end]->n_unaware_neighs == 0)
+			cl_end--;
+
+		//cout << (*seed_set).size() << " " << n_aware << " " << " " << round << " " << n_vertices << " " << n_seeds_per_insertion << endl;
+
+		// Determine the range of the RCL
+		rcl_size = min(p_size, cl_end - cl_begin + 1);
+		rcl_begin = cl_begin;
+		rcl_end = rcl_size - 1;
+
+		// Select n_seeds_per_insertion vertices from RCL at random
+
+		shuffle(vertices, vertices + cl_end + 1, default_random_engine(chrono::system_clock::now().time_since_epoch().count()));
+		sort(vertices, vertices + rcl_end + 1,compare_two_vertices_by_unaware_neighs);
+
+		for(int i = rcl_begin; i < n_seeds_per_insertion && i <= rcl_end; i++)
+		{
+			int v_chosen = i;
+
+			// If the vertex selected is unaware
+			if(vertices[v_chosen]-> state == 0)
+			{
+				n_aware++; // Update total aware
+
+				// Update number of unaware neighs of selected vertex neighs
+				for (list<Vertex*>::iterator neigh = vertices[v_chosen]-> neighbors.begin(); neigh != vertices[v_chosen]-> neighbors.end(); ++neigh)
+				{
+					(*neigh)-> n_aware_neighs++;
+		    		(*neigh)-> n_unaware_neighs--;
+				}
+			}
+
+			// Turn selected vertex a seed
+			vertices[v_chosen]-> state = 2;
+			vertices[v_chosen]-> isSeed = true;
+			(*seed_set).push_back(vertices[v_chosen]);
+			new_seeds.push(vertices[v_chosen]);
+		}
+
+		// Continue the propagation with the new seeds 
+		propagate_from_a_state(n_vertices, &new_seeds, &n_aware, &round, 1);
+	}
+	
+	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+
+	//Propagate from initial state
+	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
+
+	// Update the solution value
+	*sol_value = (*seed_set).size(); 
+
+	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+}
+
 
 // This local search deletes from the solution all seed that has the number of seed neighs more or equal to its threshold
 void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
@@ -437,6 +627,7 @@ int main (int argc, char *argv[])
 
 	// Other variables
 	int n_vertices, n_edges, best_sol_value, iterations_limit;
+	double graph_density;
 	iterations_limit = atoi(argv[3]);
 	best_sol_value = INT_MAX;
 
@@ -456,12 +647,16 @@ int main (int argc, char *argv[])
 	}
 
 	cout << "File = " << input_path << endl;
-	cout << "N vertices = " << n_vertices << endl;
-	cout << "N edges = " << n_edges << endl << endl;
 
 	// Load edges
 	cout << "Loading graph...\n";
-	load_edges(input_file, n_vertices, n_edges, vertices);
+	load_edges(input_file, n_vertices, &n_edges, vertices);
+
+	cout << "N vertices = " << n_vertices << endl;
+	cout << "N edges = " << n_edges << endl << endl;
+
+	// Calculate graph density
+	graph_density = (2*n_edges)/(n_vertices * (n_vertices-1));
 
 	// Initialize degrees and thresholds
 	initialize_vertices(n_vertices, vertices);
@@ -477,8 +672,19 @@ int main (int argc, char *argv[])
 		if(standard_construction_phase_flag == 1)
 		{	
 			cout << "Starting construction!\n";
-			standard_construction(n_vertices, vertices, &seed_set, &sol_value);
+			standard_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
 		}
+		else if(standard_construction_phase_flag == 2)
+		{
+			cout << "Starting construction!\n";
+			random_plus_greedy_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
+		}
+		else if(standard_construction_phase_flag == 3)
+		{
+			cout << "Starting construction!\n";
+			sampled_greedy_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
+		}
+
 
 		if(local_search_phase_flag == 1)
 		{
