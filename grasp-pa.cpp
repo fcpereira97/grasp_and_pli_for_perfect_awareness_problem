@@ -1,6 +1,15 @@
 #include <bits/stdc++.h>
+#include <sys/resource.h>
 
 using namespace std;
+
+// Macro for getting runtime execution
+// this macro produces a time equal to the one produced by clock(),
+// but does not suffer from the wraparound problem of clock()
+extern int getrusage();
+#define CPUTIME(ruse) (getrusage(RUSAGE_SELF,&ruse),ruse.ru_utime.tv_sec + ruse.ru_stime.tv_sec + 1e-6 * (ruse.ru_utime.tv_usec + ruse.ru_stime.tv_usec))
+struct rusage grb_ruse; // Global variable used on time counter
+double time_begin;
 
 /* Representation of a vertex
 * index - number assinged to the vertex during the graph loading
@@ -230,7 +239,7 @@ void propate_from_initial_state(int n_vertices, Vertex **vertices, vector<Vertex
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void standard_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value, int *n_rounds, int *m_aware)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
 	double alpha; // Alpha variable
@@ -310,22 +319,23 @@ void standard_construction(int n_vertices, double graph_density, Vertex ** verti
 		propagate_from_a_state(n_vertices, &new_seeds, &n_aware, &round, 1);
 	}
 	
-	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+	//cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
 	//Propagate from initial state
 	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
 	// Update the solution value
 	*sol_value = (*seed_set).size(); 
-
-	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+	*n_rounds = round;
+	*m_aware = n_aware;
+	//cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
 }
 
 // Standard method of the GRASP construction phase
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void random_plus_greedy_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+void random_plus_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
 	int p_steps, steps;
@@ -416,22 +426,24 @@ void random_plus_greedy_construction(int n_vertices, double graph_density, Verte
 		steps++;
 	}
 	
-	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+	//cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
 	//Propagate from initial state
 	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
 	// Update the solution value
 	*sol_value = (*seed_set).size(); 
+	*n_rounds = round;
+	*m_aware = n_aware;
 
-	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+	//cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
 }
 
 // Standard method of the GRASP construction phase
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void sampled_greedy_construction(int n_vertices, double graph_density, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+void sampled_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware)
 {
 	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, n_seeds_per_insertion;
 	int p_size;
@@ -508,20 +520,21 @@ void sampled_greedy_construction(int n_vertices, double graph_density, Vertex **
 		propagate_from_a_state(n_vertices, &new_seeds, &n_aware, &round, 1);
 	}
 	
-	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
+	//cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
 	//Propagate from initial state
 	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
 	// Update the solution value
 	*sol_value = (*seed_set).size(); 
-
-	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
+	*n_rounds = round;
+	*m_aware = n_aware;
+	//cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
 }
 
 
 // This local search deletes from the solution all seed that has the number of seed neighs more or equal to its threshold
-void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
+void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value,  int *n_rounds, int *m_aware)
 {
 	int n_aware, round, neigh_seeds;
 	Vertex * seed;
@@ -547,28 +560,29 @@ void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * s
 	    }
 	}
 
-	cout << "\nSeed set size after ls1 = " << (*seed_set).size();
+	//cout << "\nSeed set size after ls1 = " << (*seed_set).size();
 
 	//Propagate from initial state
 	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
 	// Update the solution value
 	*sol_value = (*seed_set).size();
-
-	cout << "\nN aware after ls1 = " << n_aware << endl;
+	*n_rounds = round;
+	*m_aware = n_aware;
+	//cout << "\nN aware after ls1 = " << n_aware << endl;
 }
 
 // This local search deletes from the solution all seed that if removed won't turn the solution infeasible
-void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
+void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value,  int *n_rounds, int *m_aware)
 {
 	Vertex *v1, *v2;
-	int n_aware, round, iterations_limit;
+	int n_aware, round, time_limit;
 
-	iterations_limit = (*seed_set).size(); // Limit of iterations
+	time_limit = (*seed_set).size(); // Limit of iterations
 
-	for (int i = 0; i < iterations_limit; i++)
+	for (int i = 0; i < time_limit; i++)
 	{	
-		//cout << i << " " << iterations_limit << endl;
+		//cout << i << " " << time_limit << endl;
 		v1 = (*seed_set)[i]; // Select a candidate to be removed
 
 		// Erase propagation
@@ -595,41 +609,49 @@ void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * s
 		{
 			(*seed_set).erase((*seed_set).begin() + i);
 			i--;
-			iterations_limit--;
+			time_limit--;
 		}
 	}
 
-	cout << "\nSeed set size after ls2 = " << (*seed_set).size();
+	//cout << "\nSeed set size after ls2 = " << (*seed_set).size();
 
 	//Propagate from initial state
 	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
 	// Update the solution value
 	*sol_value = (*seed_set).size();
-
-	cout << "\nN aware after ls2 = " << n_aware << endl;
+	*n_rounds = round;
+	*m_aware = n_aware;
+	//cout << "\nN aware after ls2 = " << n_aware << endl;
 }
 
 int main (int argc, char *argv[])
 {
+	// Time limit configuration
+	time_begin = CPUTIME(grb_ruse);
+	int time_limit = time_begin + atoi(argv[3]); // Time limit in seconds
 
 	// Files variables
-	string input_path; 
+	string input_path, output_path; 
 	FILE *input_file;
 	FILE *output_file;
 	input_path = argv[4];
+	output_path = argv[5];
 	input_file = fopen(input_path.c_str(), "r");
-	output_file = fopen("output.csv", "a");
+	output_file = fopen(output_path.c_str(), "a");
 
 	// Flags
 	int standard_construction_phase_flag = atoi(argv[1]);
 	int local_search_phase_flag = atoi(argv[2]);
 
 	// Other variables
-	int n_vertices, n_edges, best_sol_value, iterations_limit;
-	double graph_density;
-	iterations_limit = atoi(argv[3]);
-	best_sol_value = INT_MAX;
+	int n_vertices, n_edges, n_iterations;
+	double sol_value_mean = 0;
+
+	//Variables of best solution
+	int best_sol_value, best_sol_n_rounds, best_sol_n_aware, best_sol_iteration;
+	vector<Vertex*> best_seed_set;
+	best_sol_value = best_sol_n_rounds = INT_MAX;
 
 	// Load number of vertices and edges
 	load_graph_size(input_file, &n_vertices, &n_edges);
@@ -646,65 +668,101 @@ int main (int argc, char *argv[])
 		vertices[i]-> state = 0;
 	}
 
-	cout << "File = " << input_path << endl;
+	cout << "\nFile = " << input_path << endl;
 
 	// Load edges
 	cout << "Loading graph...\n";
 	load_edges(input_file, n_vertices, &n_edges, vertices);
 
 	cout << "N vertices = " << n_vertices << endl;
-	cout << "N edges = " << n_edges << endl << endl;
-
-	// Calculate graph density
-	graph_density = (2*n_edges)/(n_vertices * (n_vertices-1));
+	cout << "N edges = " << n_edges << endl;
 
 	// Initialize degrees and thresholds
 	initialize_vertices(n_vertices, vertices);
 	cout << "Graph loaded!\n\n";
 
+	n_iterations = 0;
 	// Loop of GRASP iterations
-	for(int i = 0; i < iterations_limit; i++)
+	while(CPUTIME(grb_ruse) < time_limit)
 	{
 		int sol_value = 0;
+		int n_rounds = 0;
+		int n_aware = 0;
 		vector<Vertex*> seed_set;
-
 
 		if(standard_construction_phase_flag == 1)
 		{	
-			cout << "Starting construction!\n";
-			standard_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
+			//cout << "Starting construction!\n";
+			standard_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
 		}
 		else if(standard_construction_phase_flag == 2)
 		{
-			cout << "Starting construction!\n";
-			random_plus_greedy_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
+			//cout << "Starting construction!\n";
+			random_plus_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
 		}
 		else if(standard_construction_phase_flag == 3)
 		{
-			cout << "Starting construction!\n";
-			sampled_greedy_construction(n_vertices, graph_density, vertices, &seed_set, &sol_value);
+			//cout << "Starting construction!\n";
+			sampled_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
 		}
+
+		if(CPUTIME(grb_ruse) >= time_limit)
+			break;
 
 
 		if(local_search_phase_flag == 1)
 		{
-			cout << "\n\nStarting local search 1\n";
-			first_improvement_1(n_vertices, vertices, &seed_set, &sol_value);
+			//cout << "\n\nStarting local search 1\n";
+			first_improvement_1(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
 		}
 		else if(local_search_phase_flag == 2)
 		{
-			cout << "\n\nStarting local search 2\n";
-			first_improvement_2(n_vertices, vertices, &seed_set, &sol_value);
+			//cout << "\n\nStarting local search 2\n";
+			first_improvement_2(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
 		}
 
-		cout << endl << "-------------------" << endl << endl;
+		if(CPUTIME(grb_ruse) >= time_limit)
+			break;
+
+		//cout << endl << "-------------------" << endl << endl;
+		sol_value_mean += sol_value;
+		n_iterations++;
+
+		if(sol_value < best_sol_value)
+		{
+			printf("[Iteration %d] New incumbent solution found! Solution value = %d\n", n_iterations, sol_value);
+			best_sol_value = sol_value;
+			best_sol_n_rounds = n_rounds;
+			best_seed_set = seed_set;
+			best_sol_n_aware = n_aware;
+			best_sol_iteration = n_iterations;
+		}
 
 		erase_propagation(n_vertices, vertices);
 		if(sol_value < best_sol_value)
 			best_sol_value = sol_value;
+
 	}
 
-	fprintf(output_file, "%s, %d\n", input_path.c_str(), best_sol_value);
+	sol_value_mean /= n_iterations;
+
+	printf("\nNumber of iterations = %d\n", n_iterations);
+	printf("Mean of solution values = %lf\n\n", sol_value_mean);
+	printf("Best solution found:\n");
+	printf("Solution value = %d\n", best_sol_value);
+	printf("Number of rounds = %d\n", best_sol_n_rounds);
+	printf("Number of aware nodes = %d\n", best_sol_n_aware);
+	printf("Iteration = %d\n\n", best_sol_iteration);
+
+	printf("Seed set = ");
+	for(int i = 0; i < best_seed_set.size(); i++)
+		printf("%d ", best_seed_set[i]-> index);
+	printf("\n");
+
+	fprintf(output_file, "%d, %d, %s, %d, %lf, %d, %d, %d, %d\n", standard_construction_phase_flag, local_search_phase_flag, input_path.c_str(),
+		n_iterations, sol_value_mean, best_sol_value, best_sol_n_rounds, best_sol_n_aware,  best_sol_iteration);
+
+	printf("\n ----------------------------- \n");
 
 	return 0;
 
