@@ -2,8 +2,18 @@
 
 using namespace std;
 
-// Representation of a vertex
-// If state = false, it's a spreader, else it's unaware
+/* Representation of a vertex
+* index - number assinged to the vertex during the graph loading
+* threshold - threshold assinged to the vertex
+* degree - number of edges that contain the vertex
+* n_spreader_neighs - number of neighbors of the vertex that are spreaders
+* n_seed_neighs - number of neighbors of the vertex that are seeders
+* n_aware_neighs - number of neighbors of the vertex that are aware
+* n_unaware_neighs - number of neighbors of the vertex that are unaware
+* state - 0 is unaware, 1 is aware and 2 is spreader
+* isSeed - true if it is a seed, else false
+* neighbors - list of references to neighboring vertices
+*/
 struct Vertex
 {
 	int index;
@@ -12,42 +22,22 @@ struct Vertex
 	int n_spreader_neighs;
 	int n_seed_neighs;
 	int n_aware_neighs;
-	int n_useful_edges;
+	int n_unaware_neighs;
 	int state;
-	bool seed;
-	int round_become_spreader;
+	bool isSeed;
 	list<Vertex*> neighbors;
-	vector<Vertex*> parents;
 };
 
 typedef struct Vertex Vertex;
 
-// Compare verticed by degree
-bool compare_two_vertices_by_useful_edges(Vertex* a, Vertex* b) 
+// Compare vertices by number of unaware neighbors
+bool compare_two_vertices_by_unaware_neighs(Vertex* a, Vertex* b) 
 { 
-	if(a->n_useful_edges == 0 || b->n_useful_edges == 0)
-		return (a->n_useful_edges < b->n_useful_edges);
-
-	if(a->state == 2 || b->state == 2)
-		return (a->state > b->state);
-
-    return (a-> n_useful_edges > b-> n_useful_edges);
+    return a-> n_unaware_neighs > b-> n_unaware_neighs;
 }
 
-// Compare verticed by degree
-bool compare_two_vertices_by_index(Vertex* a, Vertex* b) 
-{ 
-    return (a-> index < b-> index);
-}
-
-
-// Load number of vertices and edges
-void load_graph_size(FILE* input_file, int *n_vertices, int *n_edges)
-{
-	fscanf(input_file, "%d %d", n_vertices, n_edges);
-}
-
-bool compare_two_edges(pair<int, int> edge_1, pair<int, int> edge_2)
+// Compare two edges by the indexes of the first and second vertices
+bool compare_two_edges_by_index(pair<int, int> edge_1, pair<int, int> edge_2)
 {
 	if(edge_1.first == edge_2.first)
 		return edge_1.second < edge_2.second;
@@ -55,117 +45,75 @@ bool compare_two_edges(pair<int, int> edge_1, pair<int, int> edge_2)
 		return edge_1.first < edge_2.first;
 }
 
-// Load the edges and degrees
+// Load number of vertices and edges of the graph
+void load_graph_size(FILE* input_file, int *n_vertices, int *n_edges)
+{
+	fscanf(input_file, "%d %d", n_vertices, n_edges);
+}
 
+// Load the vertices and edges
 void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertices)
 {
-	int next_id = 0;
-	int real_edges = 0;
-	int v1_index, v2_index;
+	int next_index = 0; // Index to be assigned to the next vertex discovered
+	int n_non_duplicated_edges = 0; // Number of non-duplicated edges
+	int v1_index, v2_index, v1_id, v2_id;
 
-	vector<pair<int, int>> edges(n_edges);
-	map<int, int> vertices_map;
+	vector<pair<int, int>> edges(n_edges); // Array of edges
+	map<int, int> vertices_map; // Hash for the id from input to index assinged to the vertex
 
-	for(int i = 0; i < n_edges; i++)
+	// Load each pair of edges. The first vertex is the one with less id from input
+	for(int i = 0; i < n_edges; i++) 
 	{
-		fscanf(input_file, "%d %d", &v1_index, &v2_index);
-		//printf("%d %d\n", v1_index, v2_index); fflush(stdout);
-
-		edges[i] = make_pair(min(v1_index, v2_index), max(v1_index, v2_index));
+		fscanf(input_file, "%d %d", &v1_id, &v2_id);
+		edges[i] = make_pair(min(v1_id, v2_id), max(v1_id, v2_id));
 	}
 
-	sort(edges.begin(), edges.end(), compare_two_edges);
+	// Sort	edges by id from input
+	sort(edges.begin(), edges.end(), compare_two_edges_by_index);
 
+	// For each edge loaded
 	for(int i = 0; i < n_edges; i++)
 	{
+		// If the edge is non-duplicated do
 		if(i == 0 || (edges[i].first != edges[i-1].first) || (edges[i].second != edges[i-1].second))
 		{
-			v1_index = edges[i].first;
-			v2_index = edges[i].second;
+			v1_id = edges[i].first;
+			v2_id = edges[i].second;
 
-			if(vertices_map.find(v1_index) == vertices_map.end())
+			// If a new vertex was discovered, assign the next_index
+			if(vertices_map.find(v1_id) == vertices_map.end())
 			{
-				vertices_map[v1_index] = next_id;
-				next_id++;
+				vertices_map[v1_id] = next_index;
+				next_index++;
+			}
+			if(vertices_map.find(v2_id) == vertices_map.end())
+			{
+				vertices_map[v2_id] = next_index;
+				next_index++;
 			}
 
+			// Variables receive the index assigned to the vertex
+			v1_index = vertices_map[v1_id];
+			v2_index = vertices_map[v2_id];
 
-			if(vertices_map.find(v2_index) == vertices_map.end())
-			{
-				vertices_map[v2_index] = next_id;
-				next_id++;
-			}
+			n_non_duplicated_edges++;
 
-			v1_index = vertices_map[v1_index];
-			v2_index = vertices_map[v2_index];
-
-			real_edges++;
+			// Increase list of neighs of both of vertices of the edge
 			vertices[v1_index]-> neighbors.push_back(vertices[v2_index]);
 			vertices[v2_index]-> neighbors.push_back(vertices[v1_index]);
 
-		}else
-		{
-			//cout << edges[i].first << " " << edges[i].second << endl;
-
-		}
-
-	}
-
-	cout << "Real vertices = " << next_id << endl;
-	cout << "Real edges = " << real_edges << endl << endl;
-}
-
-/*
-// Load the edges and degrees
-void load_edges(FILE* input_file, int n_vertices, int n_edges, Vertex ** vertices)
-{
-	map<int, int> vertices_map;
-	int next_id = 0;
-	int real_edges = 0;
-	int v1_index, v2_index;
-	vector<vector<bool>> graph(n_vertices, vector<bool>(n_vertices));
-
-
-	for(int i = 0; i < n_edges; i++)
-	{
-
-		fscanf(input_file, "%d %d", &v1_index, &v2_index);
-		//printf("%d %d\n", v1_index, v2_index); fflush(stdout);
-		if(vertices_map.find(v1_index) == vertices_map.end())
-		{
-			vertices_map[v1_index] = next_id;
-			next_id++;
-		}
-
-		if(vertices_map.find(v2_index) == vertices_map.end())
-		{
-			vertices_map[v2_index] = next_id;
-			next_id++;
-		}
-
-		v1_index = vertices_map[v1_index];
-		v2_index = vertices_map[v2_index];
-
-		if(!graph[v1_index][v2_index])
-		{
-			real_edges++;
-			vertices[v1_index]-> neighbors.push_back(vertices[v2_index]);
-			vertices[v2_index]-> neighbors.push_back(vertices[v1_index]);
-			graph[v1_index][v2_index] = true;
-			graph[v2_index][v1_index] = true;
 		}
 	}
-
-	cout << "Real vertices = " << next_id << endl;
-	cout << "Real edges = " << real_edges << endl << endl;
+	//cout << n_non_duplicated_edges << endl;
 }
-*/
 
-// Print the graph
+// Print each vertex from the graph by listing its index, degree and indexes of its neighs
 void print_graph(int n_vertices, Vertex **vertices){
 	for(int i = 0; i < n_vertices; i++)
 	{
-		cout << vertices[i]-> index << " " << vertices[i]-> degree <<" " << vertices[i]-> threshold << endl;
+		cout << "Vertex " << vertices[i]-> index << endl;
+		cout << "Degree: " << vertices[i]-> degree << endl;
+		cout << "Neighs: ";
 		for (list<Vertex*>::iterator it = vertices[i]-> neighbors.begin(); it != vertices[i]-> neighbors.end(); ++it)
     		cout << (*it)-> index << " ";
     	cout << endl << endl;
@@ -180,16 +128,15 @@ void erase_propagation(int n_vertices, Vertex **vertices)
 		vertices[i]-> n_spreader_neighs = 0;
 		vertices[i]-> n_seed_neighs = 0;
 		vertices[i]-> n_aware_neighs = 0;
-		vertices[i]-> n_useful_edges = vertices[i]->degree;
+		vertices[i]-> n_unaware_neighs = vertices[i]->degree;
 		vertices[i]-> state = 0;
-		vertices[i]-> seed = false;
-		vertices[i]-> round_become_spreader = 0;
+		vertices[i]-> isSeed = false;
 	}
 }
 
+// Initialize status and data of vertices
 void initialize_vertices(int n_vertices, Vertex **vertices)
 {
-	// Initialize thresholds
 	for(int i = 0; i < n_vertices; i++)
 	{
 		vertices[i]-> degree = vertices[i]-> neighbors.size();
@@ -198,468 +145,307 @@ void initialize_vertices(int n_vertices, Vertex **vertices)
 	erase_propagation(n_vertices, vertices);
 }
 
-// Simulate the propagation
-// Return true if it is a peerfect seed set
-void propagate(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, int *round, int phase)
+// Starting from the next vertices to propagate_from_a_state and a graph state, this method simulates a propagation
+// Observe that if the next vertices given are the seed set and the graph state is the initial, then
+// the simulation represents the propagation from the beginning
+void propagate_from_a_state(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, int *round, int phase)
 {
-
+	// Spreaders that will possibly propagate_from_a_state at this round
 	queue<Vertex*> * current_spreaders;
 	current_spreaders = new queue<Vertex*>;
 	
+	// While exists a vertex that is still unaware or while at least a new vertex become spreader at the round, do
 	while(!(*next_spreaders).empty() && (*n_aware) < n_vertices)
 	{
-		(*round)++;
-		swap(current_spreaders, next_spreaders);
+		(*round)++; // Count a new round
+		swap(current_spreaders, next_spreaders); // The vertices that become spreaders in last round are considered the current ones to propagate_from_a_state
 		
+		// For each spreader that propagate_from_a_states at this round, do
 		while(!(*current_spreaders).empty())
 		{
 			Vertex * spreader = (*current_spreaders).front();
 			(*current_spreaders).pop();
-			
+
+			// For each neigh of the spreader do
 			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
 			{
-				if(spreader->n_spreader_neighs == 0)
-				{
-					(*neigh)-> n_aware_neighs++;
-	    			(*neigh)-> n_useful_edges--;
-	    		}
-	    		(*neigh)-> n_spreader_neighs++;
 
-	    		if(phase == -1 && (*neigh)-> state == 1)
-	    		{
-	    			int i, j;
+				// Number of spreaders neighs of the neigh is increased
+				(*neigh)-> n_spreader_neighs++;
 
-		    		for( i = 0; i < (*neigh)-> parents.size(); i++)
-		    		{
-		    			//cout << spreader->index << " " << (*neigh)->parents[i]->index;
-		    			if(spreader->index == (*neigh)->parents[i]->index)
-		    			{
-		    				break;
-		    			}
-		    			else if(spreader->index > (*neigh)->parents[i]->index)
-		    			{
-		    				(*neigh)-> parents.insert((*neigh)-> parents.begin() + i, spreader);
-		    				break;
-		    			}
-		    		}
-			    	
+	    		// If the spreader is a seed, the number of seed neighs of the neigh is increased
+	    		if(spreader-> isSeed)
+	    			(*neigh)-> n_seed_neighs++;
 
-			    	if(i == (*neigh)-> parents.size())
-		    		{
-		    			(*neigh)-> parents.push_back(spreader);
-		    		}
-	    			
-	   				i = 0;
-	   				j = 0;
-
-	   				while(i < spreader->parents.size() && j < (*neigh)-> parents.size())
-	   				{
-	   					//cout << i << " "<< j << endl;
-	   					if(spreader->parents[i]->index == (*neigh)-> parents[j]->index)
-	   					{
-	   						i++;
-	   					}
-	   					else if(spreader->parents[i]->index > (*neigh)-> parents[j]->index)
-	   					{
-	   						(*neigh)-> parents.insert((*neigh)-> parents.begin() + j, spreader->parents[i]);
-	   						i++;
-	   					}
-	   					j++;
-	   				}
-	   				
-	   				if(i < spreader-> parents.size())
-	   				{
-	   					(*neigh)-> parents.insert((*neigh)-> parents.end(), spreader->parents.begin() + i, spreader->parents.end());
-	   				}
-					
- 	    		}
-	    		
-	    		// neigh become aware
+	    		// If the neigh is unaware, it becomes aware
 	    		if((*neigh)-> state == 0)
 	    		{
 	    			(*neigh)-> state = 1;
-	    			(*n_aware)++;
+	    			(*n_aware)++; // Count a new aware vertex
 
-	    			if(phase == 1)
+	    			if(phase == 1) // If it's at construction phase, decrease the number of unaware neighs of each neigh of the this neigh
 	    			{
 		    			for (list<Vertex*>::iterator neigh_neigh = (*neigh)-> neighbors.begin(); neigh_neigh != (*neigh)-> neighbors.end(); ++neigh_neigh)
 		    			{
 		    				(*neigh_neigh)-> n_aware_neighs++;
-		    				(*neigh_neigh)-> n_useful_edges--;
+		    				(*neigh_neigh)-> n_unaware_neighs--;
 		    			}
 		    		}
-
-		    		if(phase == -1)
-		    		{
-			    		(*neigh)->parents =  spreader->parents;
-			    		//copy(spreader->parents.begin(), spreader->parents.end(), (*neigh)-> parents.begin());
-			    		
-			    		if((*neigh)->parents.empty())
-			    		{
-			    			(*neigh)-> parents.push_back(spreader);
-			    		}
-			    		else
-			    		{
-				    		for(int i = 0; i < (*neigh)-> parents.size(); i++)
-				    		{
-				    			if(spreader->index > (*neigh)->parents[i]->index)
-				    			{
-				    				(*neigh)-> parents.insert((*neigh)-> parents.begin() + i, spreader);
-				    				break;
-				    			}
-				    		}
-						}
-					}
-
 	    		}
 
+	    		// If the neigh is aware and its threshold was reached, it becomes a spreader
 	    		if((*neigh)-> state == 1 && (*neigh)-> n_spreader_neighs >= (*neigh)-> threshold)
 	    		{
 	    			(*neigh)-> state = 2;
-	    			(*neigh)-> round_become_spreader = *round;
-	    			(*next_spreaders).push((*neigh));
+	    			(*next_spreaders).push((*neigh)); // Insert the neigh in the list of vertex to propagate_from_a_state at the next round
 	    		}
-
-	    		if(spreader-> seed)
-	    			(*neigh)-> n_seed_neighs++;
-	    		
 			}
-			
 		}
 	}
 }
 
-// Fitness of cl equals to degree
-void construction_phase(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+void propate_from_initial_state(int n_vertices, Vertex **vertices, vector<Vertex*> *seed_set, int *n_aware, int *round)
 {
-	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_fitness, max_fitness;
-	double alpha;
-	queue<Vertex*> next_spreaders;
+	// Erase the propagation
+	erase_propagation(n_vertices, vertices);
 
-	alpha = 0.15;
+	// Configure a auxiliar seed set
+	queue<Vertex*> seed_set_aux;
+	for (int i = 0; i < (*seed_set).size(); i++)
+	{
+		(*seed_set)[i]-> state = 2;
+		(*seed_set)[i]-> isSeed = true;
+		seed_set_aux.push((*seed_set)[i]);
+	}
+
+	// Use the auxiliar seed set to propagate_from_a_state from the initial state of the graph
+	(*n_aware) = (*seed_set).size();
+	(*round) = 0;
+	propagate_from_a_state(n_vertices, &seed_set_aux, n_aware, round, 2);
+
+}
+
+// Standard method of the GRASP construction phase
+// A feasible solution is built by inserting new vertices into the seed set and propagating
+// At each insertion, the propagation continues from the last state
+// New vertices are inserted into the seed set until the solution becomes feasible
+void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value)
+{
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
+	double alpha; // Alpha variable
+	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
+
+	alpha = 0.20;
 	cl_begin = 0;
 	cl_end  = n_vertices-1;
 	n_aware = 0;
 	round = 0;
 
+	if(n_vertices < 100000)
+		n_seeds_per_insertion = 1;
+	else if(n_vertices < 1000000)
+		n_seeds_per_insertion = 10;
+	else
+		n_seeds_per_insertion = 100;
+
+	// Turn to seeds all vertices that has degree equals to 0
 	for(int i = 0; i < n_vertices; i++)
 	{
 		if(vertices[i]-> degree == 0)
 		{
 			vertices[i]-> state = 2;
-			vertices[i]-> seed = true;
+			vertices[i]-> isSeed = true;
 			(*seed_set).push_back(vertices[i]);
-			next_spreaders.push(vertices[i]);
+			new_seeds.push(vertices[i]);
 			n_aware++;
 		}
 	}
 	
+	// While the seed set is still a infeasible solutions, do
 	while(n_aware < n_vertices)
 	{
+		// Sort vertices by its numbers of unaware neighs
+		sort(vertices, vertices + cl_end + 1, compare_two_vertices_by_unaware_neighs);
+
+		// Determine the range of the CL
+		while(cl_end > cl_begin && vertices[cl_end]->n_unaware_neighs == 0)
+			cl_end--;
+
+		// Calculate the maximum and the minimum contribution values in function to the alpha
+		max_contribution = vertices[cl_begin]-> n_unaware_neighs;
+		min_contribution = max_contribution - int(alpha * (max_contribution - vertices[cl_end] -> n_unaware_neighs));
 		
-		sort(vertices + cl_begin, vertices + n_vertices, compare_two_vertices_by_useful_edges);
-		while(cl_begin <= cl_end && (vertices[cl_begin]->state == 2 || vertices[cl_begin]->n_useful_edges == 0))
-			cl_begin++;
-
-		if(cl_begin > cl_end)
-			cl_begin = cl_end;
+		//cout << (*seed_set).size() << " " << n_aware << " " << max_contribution <<" " << round << " " << n_vertices << endl;
 
 
-		max_fitness = vertices[cl_begin]-> n_useful_edges;
-		min_fitness = max_fitness - int(alpha * (max_fitness - vertices[cl_end] -> n_useful_edges));
-		
-
+		// Determine the range of the RCL
 		rcl_begin = cl_begin;
 		rcl_end = cl_begin;
-		
-		while(rcl_end <= cl_end && vertices[rcl_end]-> n_useful_edges >= min_fitness)
+		while(rcl_end < cl_end && vertices[rcl_end+1]-> n_unaware_neighs >= min_contribution)
 			rcl_end++;
-		
-		if(rcl_end > cl_end)
-			rcl_end = cl_end;
-
 		rcl_size = rcl_end - rcl_begin + 1;
-		srand (time(NULL));
-		int v_chosen = (rand()%rcl_size) + rcl_begin;
 
-		for(int i = rcl_begin; i <= rcl_end && i < rcl_begin + 100; i++)
+		// Select n_seeds_per_insertion vertices from RCL at random
+
+		shuffle(vertices, vertices + rcl_end + 1, default_random_engine(chrono::system_clock::now().time_since_epoch().count()));
 		{
-			v_chosen = i;
-			if(vertices[v_chosen]-> state == 0)
-				n_aware++;
+			for(int i = rcl_begin; i < n_seeds_per_insertion && i <= rcl_end; i++)
+			{
 
-			vertices[v_chosen]-> state = 2;
-			vertices[v_chosen]-> seed = true;
-			(*seed_set).push_back(vertices[v_chosen]);
-			next_spreaders.push(vertices[v_chosen]);
+				int v_chosen = i;
+
+				// If the vertex selected is unaware
+				if(vertices[v_chosen]-> state == 0)
+				{
+					n_aware++; // Update total aware
+
+					// Update number of unaware neighs of selected vertex neighs
+					for (list<Vertex*>::iterator neigh = vertices[v_chosen]-> neighbors.begin(); neigh != vertices[v_chosen]-> neighbors.end(); ++neigh)
+					{
+						(*neigh)-> n_aware_neighs++;
+			    		(*neigh)-> n_unaware_neighs--;
+					}
+				}
+
+				// Turn selected vertex a seed
+				vertices[v_chosen]-> state = 2;
+				vertices[v_chosen]-> isSeed = true;
+				(*seed_set).push_back(vertices[v_chosen]);
+				new_seeds.push(vertices[v_chosen]);
+			}
 		}
 
-		propagate(n_vertices, &next_spreaders, &n_aware, &round, 1);
-		//cout << "ROUND :" << round << endl;
-
-		//printf("SSS = %d ASS = %d MAX_USEFUL_EDGES = %d \n", (int)(*seed_set).size(), n_aware, max_fitness); fflush(stdout);
-		//sprintf("cl_begin = %d cl_end = %d\n", cl_begin, cl_end); fflush(stdout);
-
+		// Continue the propagation with the new seeds 
+		propagate_from_a_state(n_vertices, &new_seeds, &n_aware, &round, 1);
 	}
-
-	/*	
-	cout << "Seed set: ";
-	for (int i = 0; i < (*seed_set).size(); i++)
-		cout << (*seed_set)[i]-> index << " ";
-	*/
 	
 	cout << "\nSeed set size = " << (*seed_set).size() << "\nN aware = " << n_aware << "\nN rounds = " << round << endl;
 
-	erase_propagation(n_vertices, vertices);
-	queue<Vertex*> next_spreaders_aux;
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		(*seed_set)[i]-> state = 2;
-		(*seed_set)[i]-> seed = true;
-		next_spreaders_aux.push((*seed_set)[i]);
-	}
+	//Propagate from initial state
+	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
-	n_aware = (*seed_set).size();
-	round = 0;
+	// Update the solution value
+	*sol_value = (*seed_set).size(); 
 
-	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round, 2);
 	cout << "\nN aware re-prop = " << n_aware << "\nN rounds re-prop = " << round  << endl;
-
-	*sol_value = (*seed_set).size();
 }
 
-void first_improving1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
+// This local search deletes from the solution all seed that has the number of seed neighs more or equal to its threshold
+void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
 {
 	int n_aware, round, neigh_seeds;
 	Vertex * seed;
 	neigh_seeds = 0;
 
+	// For each seed, do
 	for (int i = 0; i < (*seed_set).size(); i++)
 	{
 		seed = (*seed_set)[i];
-		//cout << seed-> n_spreader_neighs << " " << seed-> threshold << endl;
+
+		// If the seed won't become unaware if removed and has a number seed neighs more or equal to its threshold
 		if(seed-> threshold > 1 && seed-> n_seed_neighs >= seed-> threshold)
 		{
+			// Decrease the number of seed neighs of its neighs
 			for (list<Vertex*>::iterator neigh = seed-> neighbors.begin(); neigh != seed-> neighbors.end(); ++neigh)
 			{
 				(*neigh)-> n_seed_neighs--;
 			}
 
+			// Remove the seed from the seed set
 	    	(*seed_set).erase((*seed_set).begin() + i);
 	    	i--;
 	    }
 	}
 
-	erase_propagation(n_vertices, vertices);
+	cout << "\nSeed set size after ls1 = " << (*seed_set).size();
 
-	/*
-	cout << "\nSeed set after ls: ";
-	for (int i = 0; i < (*seed_set).size(); i++)
-		cout << (*seed_set)[i]-> index << " ";
-	*/
+	//Propagate from initial state
+	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
-	cout << "\nSeed set size after ls = " << (*seed_set).size();
-	queue<Vertex*> next_spreaders_aux;
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		(*seed_set)[i]-> state = 2;
-		next_spreaders_aux.push((*seed_set)[i]);
-	}
-
-	n_aware = next_spreaders_aux.size();
-	round = 0;
-	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round, 2);
-	cout << "\nN aware after ls = " << n_aware << endl;
-
+	// Update the solution value
 	*sol_value = (*seed_set).size();
+
+	cout << "\nN aware after ls1 = " << n_aware << endl;
 }
 
-void first_improving2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
+// This local search deletes from the solution all seed that if removed won't turn the solution infeasible
+void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
 {
-	vector<Vertex*> *seed_set_als;
-	seed_set_als = new vector <Vertex*>;
-	
 	Vertex *v1, *v2;
-	int n_aware, round, limit;
+	int n_aware, round, iterations_limit;
 
-	limit = (*seed_set).size();
+	iterations_limit = (*seed_set).size(); // Limit of iterations
 
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		printf("%d %d\n", i, int((*seed_set).size())); fflush(stdout);
+	for (int i = 0; i < iterations_limit; i++)
+	{	
+		//cout << i << " " << iterations_limit << endl;
+		v1 = (*seed_set)[i]; // Select a candidate to be removed
 
-		v1 = (*seed_set)[i];
+		// Erase propagation
 		erase_propagation(n_vertices, vertices);
-		queue<Vertex*> next_spreaders;
 
-		if(i < limit)
+		// Propagate_from_a_state from the initial state of the graph without the selected candidate within the seeders
+		queue<Vertex*> seed_set_aux;
+
+		for (int j = 0; j < (*seed_set).size(); j++)
 		{
-			for (int j = 0; j < (*seed_set).size(); j++)
+			v2 = (*seed_set)[j];
+			if(v1-> index != v2->index)
 			{
-				v2 = (*seed_set)[j];
-				if(v1-> index != v2->index)
-				{
-					next_spreaders.push(v2);
-					v2->state = 2;
-				}
+				seed_set_aux.push(v2);
+				v2->state = 2;
 			}
+		}
+		n_aware = seed_set_aux.size();
+		round = 0;
+		propagate_from_a_state(n_vertices, &seed_set_aux, &n_aware, &round, 2);
 
-			n_aware = next_spreaders.size();
-			round = 0;
-			propagate(n_vertices, &next_spreaders, &n_aware, &round, 2);
-		}
-		else
-		{
-			n_aware = -1;
-		}
-
-		if(n_aware != n_vertices)
-		{
-			(*seed_set_als).push_back(v1);
-		}
-		else
+		// If the removal does not affected the feasibility of the solution, remove the seed from the seed set
+		if(n_aware == n_vertices)
 		{
 			(*seed_set).erase((*seed_set).begin() + i);
 			i--;
+			iterations_limit--;
 		}
 	}
-	
-	swap(seed_set, seed_set_als);
-	erase_propagation(n_vertices, vertices);
 
-	/*
-	cout << "\nSeed set after ls: ";
-	for (int i = 0; i < (*seed_set).size(); i++)
-		cout << (*seed_set)[i]-> index << " ";
-	*/
+	cout << "\nSeed set size after ls2 = " << (*seed_set).size();
 
-	cout << "\nSeed set size after ls = " << (*seed_set).size();
-	queue<Vertex*> next_spreaders_aux;
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		(*seed_set)[i]-> state = 2;
-		next_spreaders_aux.push((*seed_set)[i]);
-	}
+	//Propagate from initial state
+	propate_from_initial_state(n_vertices, vertices, seed_set, &n_aware, &round);
 
-	n_aware = next_spreaders_aux.size();
-	round = 0;
-	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round, 2);
-	cout << "\nN aware after ls = " << n_aware << endl;
-	
+	// Update the solution value
 	*sol_value = (*seed_set).size();
-}
 
-bool search_ancestor(Vertex * v, int parent_index)
-{	
-	//printf("%d ", v->index); fflush(stdout);
-
-	if(!v->parents.empty()){
-		for(int i = 0; i < v->parents.size(); i++)
-		{
-			if(v->parents[i]->index == parent_index)
-				return true;
-			else if(search_ancestor(v->parents[i], parent_index))
-				return true;
-		}
-	}
-	return false;
-}
-
-void first_improving3(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value)
-{
-
-	Vertex *seed;
-	int n_aware, round;
-
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		seed = (*seed_set)[i];
-		bool remove = true;
-		if(seed-> threshold > 1)
-		{			
-			if(seed->n_spreader_neighs < seed->threshold)
-				remove = false;
-			for (list<Vertex*>::iterator neigh = seed-> neighbors.begin(); remove && neigh != seed-> neighbors.end(); ++neigh)
-			{
-				//printf("%d %d\n", i, int((*seed_set).size())); fflush(stdout);
-
-				if( ((*neigh)-> state == 1 && (*neigh)-> n_spreader_neighs == 1) || 
-					((!(*neigh)-> seed) && (*neigh)-> state == 2 && (*neigh)-> n_spreader_neighs == (*neigh)-> threshold))
-				{
-					remove = false;
-				}
-
-				for(int i = 0; i < remove && (*neigh)->parents.size(); i++)
-				{
-					if((*neigh)->parents[i]-> index == seed-> index)
-					{
-						remove = false;
-					}
-				}
-
-				/*
-				remove = !search_ancestor((*neigh), seed->index);
-				*/
-			}
-		}
-		if(remove)
-		{
-			for (list<Vertex*>::iterator neigh = seed-> neighbors.begin(); neigh != seed-> neighbors.end(); ++neigh)
-			{
-				(*neigh)-> n_spreader_neighs--;
-			}
-			seed->seed = false;
-			(*seed_set).erase((*seed_set).begin() + i);
-			i--;
-		}
-	}
-	
-	erase_propagation(n_vertices, vertices);
-
-	/*
-	cout << "\nSeed set after ls: ";
-	for (int i = 0; i < (*seed_set).size(); i++)
-		cout << (*seed_set)[i]-> index << " ";
-	*/
-
-	cout << "\nSeed set size after ls = " << (*seed_set).size();
-	queue<Vertex*> next_spreaders_aux;
-	for (int i = 0; i < (*seed_set).size(); i++)
-	{
-		(*seed_set)[i]-> state = 2;
-		next_spreaders_aux.push((*seed_set)[i]);
-	}
-
-	n_aware = next_spreaders_aux.size();
-	round = 0;
-	propagate(n_vertices, &next_spreaders_aux, &n_aware, &round, 2);
-	cout << "\nN aware after ls = " << n_aware << endl;
-	
-	*sol_value = (*seed_set).size();
+	cout << "\nN aware after ls2 = " << n_aware << endl;
 }
 
 int main (int argc, char *argv[])
 {
 
-	string input_path;
+	// Files variables
+	string input_path; 
 	FILE *input_file;
 	FILE *output_file;
 	input_path = argv[4];
 	input_file = fopen(input_path.c_str(), "r");
 	output_file = fopen("output.csv", "a");
 
-	int construction_phase_flag = atoi(argv[1]);
+	// Flags
+	int standard_construction_phase_flag = atoi(argv[1]);
 	int local_search_phase_flag = atoi(argv[2]);
-	int n_vertices, n_edges, best_sol_value, iterations_limit;
 
-	load_graph_size(input_file, &n_vertices, &n_edges);
-	Vertex ** vertices;
-	vertices = (Vertex**) malloc(n_vertices * sizeof(Vertex*));
-	
+	// Other variables
+	int n_vertices, n_edges, best_sol_value, iterations_limit;
 	iterations_limit = atoi(argv[3]);
 	best_sol_value = INT_MAX;
 
-	// Initialize the array ofvertices
+	// Load number of vertices and edges
+	load_graph_size(input_file, &n_vertices, &n_edges);
+
+	// Allocate and initialize array of vertices
+	Vertex ** vertices;
+	vertices = (Vertex**) malloc(n_vertices * sizeof(Vertex*));
 	for(int i = 0; i < n_vertices; i++)
 	{
 		vertices[i] = new Vertex;
@@ -676,35 +462,33 @@ int main (int argc, char *argv[])
 	// Load edges
 	cout << "Loading graph...\n";
 	load_edges(input_file, n_vertices, n_edges, vertices);
-	initialize_vertices(n_vertices, vertices);
-	cout << "Graph loaded!\n";
 
+	// Initialize degrees and thresholds
+	initialize_vertices(n_vertices, vertices);
+	cout << "Graph loaded!\n\n";
+
+	// Loop of GRASP iterations
 	for(int i = 0; i < iterations_limit; i++)
 	{
 		int sol_value = 0;
 		vector<Vertex*> seed_set;
 
 
-		if(construction_phase_flag == 1)
+		if(standard_construction_phase_flag == 1)
 		{	
-			cout << "Starting construction phase!\n";
-			construction_phase(n_vertices, vertices, &seed_set, &sol_value);
+			cout << "Starting construction!\n";
+			standard_construction(n_vertices, vertices, &seed_set, &sol_value);
 		}
 
 		if(local_search_phase_flag == 1)
 		{
-			cout << "\n\nStarting local search phase\n";
-			first_improving1(n_vertices, vertices, &seed_set, &sol_value);
+			cout << "\n\nStarting local search 1\n";
+			first_improvement_1(n_vertices, vertices, &seed_set, &sol_value);
 		}
 		else if(local_search_phase_flag == 2)
 		{
-			cout << "\n\nStarting local search phase\n";
-			first_improving2(n_vertices, vertices, &seed_set, &sol_value);
-		}
-		else if(local_search_phase_flag == 3)
-		{
-			cout << "\n\nStarting local search phase\n";
-			first_improving3(n_vertices, vertices, &seed_set, &sol_value);
+			cout << "\n\nStarting local search 2\n";
+			first_improvement_2(n_vertices, vertices, &seed_set, &sol_value);
 		}
 
 		cout << endl << "-------------------" << endl << endl;
