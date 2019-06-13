@@ -651,6 +651,8 @@ int main (int argc, char *argv[])
 	//Variables of best solution
 	int best_sol_value, best_sol_n_rounds, best_sol_n_aware, best_sol_iteration;
 	vector<Vertex*> best_seed_set;
+	vector<Vertex*> seed_set;
+
 	best_sol_value = best_sol_n_rounds = INT_MAX;
 
 	// Load number of vertices and edges
@@ -688,7 +690,6 @@ int main (int argc, char *argv[])
 		int sol_value = 0;
 		int n_rounds = 0;
 		int n_aware = 0;
-		vector<Vertex*> seed_set;
 
 		if(standard_construction_phase_flag == 1)
 		{	
@@ -741,6 +742,8 @@ int main (int argc, char *argv[])
 		erase_propagation(n_vertices, vertices);
 		if(sol_value < best_sol_value)
 			best_sol_value = sol_value;
+
+		seed_set.clear();
 
 	}
 
