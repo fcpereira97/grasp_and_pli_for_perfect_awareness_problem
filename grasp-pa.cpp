@@ -240,9 +240,9 @@ void propate_from_initial_state(int n_vertices, Vertex **vertices, vector<Vertex
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value, int *n_rounds, int *m_aware)
+void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value, int *n_rounds, int *m_aware, int n_seeds_per_insertion)
 {
-	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution;
 	double alpha; // Alpha variable
 	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
 
@@ -251,7 +251,6 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 	cl_end  = n_vertices-1;
 	n_aware = 0;
 	round = 0;
-	n_seeds_per_insertion = 1;
 
 	// Turn to seeds all vertices that has degree equals to 0
 	for(int i = 0; i < n_vertices; i++)
@@ -336,9 +335,9 @@ void standard_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void random_plus_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware)
+void random_plus_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware, int n_seeds_per_insertion)
 {
-	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution, n_seeds_per_insertion;
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, min_contribution, max_contribution;
 	int p_steps, steps;
 	double alpha; // Alpha variable
 	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
@@ -348,7 +347,6 @@ void random_plus_greedy_construction(int n_vertices, Vertex ** vertices, vector<
 	cl_end  = n_vertices-1;
 	n_aware = 0;
 	round = 0;
-	n_seeds_per_insertion = 1;
 	p_steps = 0.01 * n_vertices;
 	steps = 0;
 
@@ -444,9 +442,9 @@ void random_plus_greedy_construction(int n_vertices, Vertex ** vertices, vector<
 // A feasible solution is built by inserting new vertices into the seed set and propagating
 // At each insertion, the propagation continues from the last state
 // New vertices are inserted into the seed set until the solution becomes feasible
-void sampled_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware)
+void sampled_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vertex*> *seed_set, int *sol_value,  int *n_rounds, int *m_aware, int n_seeds_per_insertion)
 {
-	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size, n_seeds_per_insertion;
+	int n_aware, round, cl_begin, cl_end, rcl_begin, rcl_end, rcl_size;
 	int p_size;
 	queue<Vertex*> new_seeds; // Next vertices to propagate_from_a_state
 
@@ -454,7 +452,6 @@ void sampled_greedy_construction(int n_vertices, Vertex ** vertices, vector<Vert
 	cl_end  = n_vertices-1;
 	n_aware = 0;
 	round = 0;
-	n_seeds_per_insertion = 1;
 	p_size = 0.1 * n_vertices;
 
 	// Turn to seeds all vertices that has degree equals to 0
@@ -574,16 +571,22 @@ void first_improvement_1(int n_vertices, Vertex ** vertices, vector<Vertex*> * s
 }
 
 // This local search deletes from the solution all seed that if removed won't turn the solution infeasible
-void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value,  int *n_rounds, int *m_aware)
+void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * seed_set, int *sol_value,  int *n_rounds, int *m_aware, double rate_first_improvement_2)
 {
 	Vertex *v1, *v2;
-	int n_aware, round, time_limit;
+	int n_aware, round, iterations_limit;
 
-	time_limit = (*seed_set).size(); // Limit of iterations
+	iterations_limit = (*seed_set).size() * rate_first_improvement_2; // Limit of iterations
 
-	for (int i = 0; i < time_limit; i++)
+	//If it will not evaluate all the neigh, so randomize the ones to be evalueated
+	if(rate_first_improvement_2 < 1)
+	{
+		shuffle((*seed_set).begin(), (*seed_set).end(), default_random_engine(chrono::system_clock::now().time_since_epoch().count()));
+	}
+
+	for (int i = 0; i < iterations_limit; i++)
 	{	
-		//cout << i << " " << time_limit << endl;
+		//cout << i << " " << iterations_limit << endl;
 		v1 = (*seed_set)[i]; // Select a candidate to be removed
 
 		// Erase propagation
@@ -610,7 +613,7 @@ void first_improvement_2(int n_vertices, Vertex ** vertices, vector<Vertex*> * s
 		{
 			(*seed_set).erase((*seed_set).begin() + i);
 			i--;
-			time_limit--;
+			iterations_limit--;
 		}
 	}
 
@@ -630,24 +633,26 @@ int main (int argc, char *argv[])
 {
 	// Time limit configuration
 	time_begin = CPUTIME(grb_ruse);
-	int time_limit = time_begin + atoi(argv[3]); // Time limit in seconds
+	int time_limit = time_begin + atoi(argv[5]); // Time limit in seconds
 
 	// Files variables
 	string input_path, output_path; 
 	FILE *input_file;
 	FILE *output_file;
-	input_path = argv[4];
-	output_path = argv[5];
+	input_path = argv[6];
+	output_path = argv[7];
 	input_file = fopen(input_path.c_str(), "r");
 	output_file = fopen(output_path.c_str(), "a");
 
 	// Flags
 	int standard_construction_phase_flag = atoi(argv[1]);
-	int local_search_phase_flag = atoi(argv[2]);
+	int local_search_phase_flag = atoi(argv[3]);
 
 	// Other variables
 	int n_vertices, n_edges, n_iterations;
 	double sol_value_mean = 0;
+	int n_seeds_per_insertion = atoi(argv[2]);
+	double rate_first_improvement_2 = atof(argv[4]);
 
 	//Variables of best solution
 	int best_sol_value, best_sol_n_rounds, best_sol_n_aware, best_sol_iteration;
@@ -695,17 +700,17 @@ int main (int argc, char *argv[])
 		if(standard_construction_phase_flag == 1)
 		{	
 			//cout << "Starting construction!\n";
-			standard_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
+			standard_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware, n_seeds_per_insertion);
 		}
 		else if(standard_construction_phase_flag == 2)
 		{
 			//cout << "Starting construction!\n";
-			random_plus_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
+			random_plus_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware, n_seeds_per_insertion);
 		}
 		else if(standard_construction_phase_flag == 3)
 		{
 			//cout << "Starting construction!\n";
-			sampled_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
+			sampled_greedy_construction(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware, n_seeds_per_insertion);
 		}
 
 		if(CPUTIME(grb_ruse) >= time_limit)
@@ -720,7 +725,7 @@ int main (int argc, char *argv[])
 		else if(local_search_phase_flag == 2)
 		{
 			//cout << "\n\nStarting local search 2\n";
-			first_improvement_2(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware);
+			first_improvement_2(n_vertices, vertices, &seed_set, &sol_value, &n_rounds, &n_aware, rate_first_improvement_2);
 		}
 
 		if(CPUTIME(grb_ruse) >= time_limit)
