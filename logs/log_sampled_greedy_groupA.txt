@@ -1,0 +1,55 @@
+
+File = instances/groupA/BlogCatalog-dataset.csv
+Loading graph...
+N vertices = 10312
+N edges = 333983
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 204
+[Iteration 2] New incumbent solution found! Solution value = 202
+[Iteration 3] New incumbent solution found! Solution value = 201
+[Iteration 7] New incumbent solution found! Solution value = 200
+[Iteration 22] New incumbent solution found! Solution value = 199
+[Iteration 48] New incumbent solution found! Solution value = 198
+
+Number of iterations = 397
+Mean of solution values = 202.455919
+
+Best solution found:
+Solution value = 198
+Number of rounds = 6
+Number of aware nodes = 10312
+Iteration = 48
+
+Seed set = 9 33 46 8 94 53 246 112 194 1 185 541 2 166 27 249 40 129 6 57 102 181 122 1208 118 126 116 130 78 958 446 386 25 67 42 56 559 125 30 105 38 19 1180 1622 453 50 190 433 370 31 171 424 407 48 75 124 399 544 157 146 4382 103 86 16 641 748 278 66 392 507 668 35 1433 1562 2058 513 145 147 736 686 70 1414 111 1809 180 13 1005 2718 710 502 494 2176 2160 2603 109 1848 179 76 973 61 2604 328 607 445 1160 342 2387 327 783 923 1515 353 62 231 173 937 2761 731 506 49 1691 856 1359 5436 226 1517 7276 747 3824 8235 667 892 2254 735 1610 1396 222 2133 2007 2627 5532 1693 2738 4014 363 1100 808 1266 8497 2389 1930 1075 2477 1118 734 72 1036 123 2552 1331 132 673 1224 358 139 430 2069 4871 133 980 3529 160 1598 3730 3240 196 121 245 1061 6380 2310 514 785 1596 478 4587 243 219 6084 4041 156 6588 9695 2410 894 155 584 1217 
+
+ ----------------------------- 
+
+File = instances/groupA/BuzzNet-dataset.csv
+Loading graph...
+N vertices = 101168
+N edges = 2763066
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 129
+[Iteration 8] New incumbent solution found! Solution value = 128
+[Iteration 14] New incumbent solution found! Solution value = 127
+[Iteration 72] New incumbent solution found! Solution value = 126
+
+Number of iterations = 135
+Mean of solution values = 129.866667
+
+Best solution found:
+Solution value = 126
+Number of rounds = 3
+Number of aware nodes = 101168
+Iteration = 72
+
+Seed set = 101163 101164 101165 101166 101167 2646 129 374 3717 3732 3658 1803 13804 2673 403 2961 504 450 21 0 36 503 424 297 261 746 203 3151 13420 423 280 411 287 13402 260 105 99 3737 14989 136 3495 1819 631 264 412 17616 398 2985 111 138 3422 9848 3451 2555 392 15872 268 195 15927 37 345 341 21607 69335 61800 3442 27702 2546 414 665 76355 14784 231 49273 70 272 309 27585 14367 327 14902 9970 2002 46 130 12949 270 65166 395 404 36219 10 4352 28346 18551 26856 20450 61463 442 78 2090 31921 57035 56382 1 171 343 54334 21800 31845 27701 49392 32928 4125 9657 24019 98649 6037 34697 55 18979 76491 49477 64 258 61 
+
+ ----------------------------- 
+
+File = instances/groupA/CA-AstroPh.txt
+Loading graph...
+N vertices = 18772
+N edges = 198110

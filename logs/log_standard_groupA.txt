@@ -1,0 +1,53 @@
+
+File = instances/groupA/BlogCatalog-dataset.csv
+Loading graph...
+N vertices = 10312
+N edges = 333983
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 199
+[Iteration 22] New incumbent solution found! Solution value = 198
+[Iteration 341] New incumbent solution found! Solution value = 197
+
+Number of iterations = 415
+Mean of solution values = 202.453012
+
+Best solution found:
+Solution value = 197
+Number of rounds = 5
+Number of aware nodes = 10312
+Iteration = 341
+
+Seed set = 53 46 1 8 112 194 2 246 541 129 166 27 249 57 33 102 9 185 181 6 40 94 1208 126 118 122 56 130 446 958 116 386 25 78 67 42 559 125 19 38 105 30 1180 190 1622 453 50 399 544 370 171 157 433 48 75 31 124 407 103 86 424 4382 146 16 1414 502 145 748 2058 923 641 507 327 147 66 1562 736 392 278 70 111 668 513 686 1809 76 2604 222 783 2718 62 328 973 179 445 61 980 353 342 607 2160 13 1005 1433 2603 2176 710 1515 2387 494 109 584 2633 155 64 132 226 2389 4041 238 478 808 4752 289 6588 1516 1596 156 1165 1930 1494 1855 5827 2076 231 5014 4587 1848 1960 219 6380 2552 3682 1075 1170 6084 1036 1224 3240 6253 196 514 785 1693 266 3730 658 844 191 2761 402 9695 121 540 3824 747 1118 363 1598 3529 136 937 2812 894 3263 506 149 2254 1061 505 5436 49 2738 2410 5 2069 180 243 2007 1359 8497 3321 245 173 4871 1160 1217 
+
+ ----------------------------- 
+
+File = instances/groupA/BuzzNet-dataset.csv
+Loading graph...
+N vertices = 101168
+N edges = 2763066
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 129
+[Iteration 4] New incumbent solution found! Solution value = 128
+[Iteration 9] New incumbent solution found! Solution value = 127
+[Iteration 43] New incumbent solution found! Solution value = 126
+[Iteration 115] New incumbent solution found! Solution value = 125
+
+Number of iterations = 138
+Mean of solution values = 129.550725
+
+Best solution found:
+Solution value = 125
+Number of rounds = 4
+Number of aware nodes = 101168
+Iteration = 115
+
+Seed set = 101163 101164 101165 101166 101167 2646 504 3717 2673 13804 2961 3422 403 450 374 21 129 411 3732 1803 13402 99 424 746 36 13420 297 261 503 2546 280 3151 105 28 287 260 203 136 3658 3737 665 398 264 272 111 195 284 1819 423 412 15562 138 341 185 345 392 2555 70 15872 268 14367 69335 13506 17335 340 327 2002 3442 61800 3451 36219 15927 32928 14902 2985 631 14784 309 344 414 9970 46 67266 35606 26856 34589 76355 76539 57107 20634 14626 656 130 49524 18551 620 9887 9657 49392 2350 98649 61 26370 395 55 4352 315 18979 0 24019 192 64 47106 31845 27702 21607 258 76491 4125 78 65 21186 31921 65327 270 
+
+ ----------------------------- 
+
+File = instances/groupA/CA-AstroPh.txt
+Loading graph...
+N vertices = 18772
+N edges = 198110
