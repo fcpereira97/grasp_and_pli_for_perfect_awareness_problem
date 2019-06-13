@@ -89,3 +89,46 @@ Iteration = 985
 Seed set = 2925 2286 557 931 2864 2524 601 4416 1056 3410 669 1167 1216 3887 307 4189 3222 2875 2526 690 141 4074 442 4406 2998 2542 1303 3120 3390 2366 4640 3181 4431 355 615 2315 559 4283 484 2651 4264 680 683 4524 29 3112 1288 2657 2789 280 4300 4811 3611 2901 4410 2581 662 4334 3534 4280 4094 331 4343 978 2608 4294 3544 269 3514 4714 3622 3330 561 2967 4321 3374 2604 384 985 4391 2636 4301 3708 3132 3072 4207 2597 3258 4214 4220 2573 4258 679 2060 3630 4349 2693 4169 187 651 1264 339 4493 
 
  ----------------------------- 
+
+File = instances/groupB/jazz.net
+Loading graph...
+N vertices = 198
+N edges = 2742
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 13
+[Iteration 31] New incumbent solution found! Solution value = 12
+
+Number of iterations = 852939
+Mean of solution values = 14.182441
+
+Best solution found:
+Solution value = 12
+Number of rounds = 4
+Number of aware nodes = 198
+Iteration = 31
+
+Seed set = 53 30 34 66 132 9 31 27 114 162 69 174 
+
+ ----------------------------- 
+
+File = instances/groupB/karate.gml
+Loading graph...
+N vertices = 34
+N edges = 78
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 1
+
+Number of iterations = 15843387
+Mean of solution values = 1.677022
+
+Best solution found:
+Solution value = 1
+Number of rounds = 12
+Number of aware nodes = 34
+Iteration = 1
+
+Seed set = 23 
+
+ ----------------------------- 

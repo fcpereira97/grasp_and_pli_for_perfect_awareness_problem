@@ -2,3 +2,5 @@
 1, 2, instances/groupB/Douban-dataset.csv, 7, 3236.428571, 3217, 545, 154908, 3
 1, 2, instances/groupB/facebook_combined.txt, 79276, 10.000000, 10, 1, 4039, 1
 1, 2, instances/groupB/power.gml, 5402, 108.308960, 103, 102, 4941, 316
+1, 2, instances/groupB/jazz.net, 1176233, 13.092594, 12, 4, 198, 1416
+1, 2, instances/groupB/karate.gml, 21993675, 1.373364, 1, 12, 34, 1
