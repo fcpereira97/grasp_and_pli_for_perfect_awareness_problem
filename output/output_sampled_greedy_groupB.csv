@@ -1,2 +1,4 @@
 3, 2, instances/groupB/Cit-HepTh.txt, 32, 1688.593750, 1652, 930, 27770, 29
 3, 2, instances/groupB/Douban-dataset.csv, 6, 3254.166667, 3231, 465, 154908, 4
+3, 2, instances/groupB/facebook_combined.txt, 49283, 10.000000, 10, 1, 4039, 1
+3, 2, instances/groupB/power.gml, 4877, 108.439820, 103, 103, 4941, 985

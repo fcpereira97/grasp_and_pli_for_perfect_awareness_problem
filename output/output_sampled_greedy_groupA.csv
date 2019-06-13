@@ -1,2 +1,7 @@
 3, 2, instances/groupA/BlogCatalog-dataset.csv, 397, 202.455919, 198, 6, 10312, 48
 3, 2, instances/groupA/BuzzNet-dataset.csv, 135, 129.866667, 126, 3, 101168, 72
+3, 2, instances/groupA/CA-AstroPh.txt, 46, 1387.326087, 1350, 554, 18772, 5
+3, 2, instances/groupA/CA-CondMat.txt, 64, 1378.140625, 1364, 711, 23133, 7
+3, 2, instances/groupA/CA-GrQc.txt, 988, 559.858300, 551, 164, 5242, 274
+3, 2, instances/groupA/CA-HepPh.txt, 169, 882.976331, 866, 316, 12008, 142
+3, 2, instances/groupA/CA-HepTh.txt, 353, 746.654391, 726, 268, 9877, 114
