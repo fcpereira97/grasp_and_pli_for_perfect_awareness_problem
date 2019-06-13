@@ -161,20 +161,21 @@ void initialize_vertices(int n_vertices, Vertex **vertices)
 void propagate_from_a_state(int n_vertices, queue<Vertex*> * next_spreaders, int *n_aware, int *round, int phase)
 {
 	// Spreaders that will possibly propagate_from_a_state at this round
-	queue<Vertex*> * current_spreaders;
-	current_spreaders = new queue<Vertex*>;
-	
+	int n_next_spreaders;
+
 	// While exists a vertex that is still unaware or while at least a new vertex become spreader at the round, do
 	while(!(*next_spreaders).empty() && (*n_aware) < n_vertices)
 	{
+		// The vertices that become spreaders in last round are considered the current ones to propagate_from_a_state
+		n_next_spreaders = (*next_spreaders).size();
 		(*round)++; // Count a new round
-		swap(current_spreaders, next_spreaders); // The vertices that become spreaders in last round are considered the current ones to propagate_from_a_state
 		
 		// For each spreader that propagate_from_a_states at this round, do
-		while(!(*current_spreaders).empty())
+		while(n_next_spreaders > 0)
 		{
-			Vertex * spreader = (*current_spreaders).front();
-			(*current_spreaders).pop();
+			// Get the next vertex
+			Vertex * spreader = (*next_spreaders).front();
+			(*next_spreaders).pop();
 
 			// For each neigh of the spreader do
 			for (list<Vertex*>::iterator neigh = spreader-> neighbors.begin(); neigh != spreader-> neighbors.end(); ++neigh)
@@ -210,6 +211,7 @@ void propagate_from_a_state(int n_vertices, queue<Vertex*> * next_spreaders, int
 	    			(*next_spreaders).push((*neigh)); // Insert the neigh in the list of vertex to propagate_from_a_state at the next round
 	    		}
 			}
+			n_next_spreaders--;
 		}
 	}
 }
@@ -232,7 +234,6 @@ void propate_from_initial_state(int n_vertices, Vertex **vertices, vector<Vertex
 	(*n_aware) = (*seed_set).size();
 	(*round) = 0;
 	propagate_from_a_state(n_vertices, &seed_set_aux, n_aware, round, 2);
-
 }
 
 // Standard method of the GRASP construction phase
@@ -744,7 +745,6 @@ int main (int argc, char *argv[])
 			best_sol_value = sol_value;
 
 		seed_set.clear();
-
 	}
 
 	sol_value_mean /= n_iterations;
@@ -766,6 +766,12 @@ int main (int argc, char *argv[])
 		n_iterations, sol_value_mean, best_sol_value, best_sol_n_rounds, best_sol_n_aware,  best_sol_iteration);
 
 	printf("\n ----------------------------- \n");
+
+	for(int i = 0; i < n_vertices; i++)
+	{
+		delete vertices[i];		
+	}
+	free(vertices);
 
 	return 0;
 
