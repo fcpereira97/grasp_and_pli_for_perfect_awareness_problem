@@ -66,16 +66,6 @@ Seed set = 351 107 1821 352 0 348 1831 349 1827 1843
 
  ----------------------------- 
 
-File = instances/groupB/jazz.net
-Loading graph...
-N vertices = 198
-N edges = 2742
-
-File = instances/groupB/karate.gml
-Loading graph...
-N vertices = 34
-N edges = 78
-
 File = instances/groupB/power.gml
 Loading graph...
 N vertices = 4941
@@ -101,13 +91,3 @@ Iteration = 2786
 Seed set = 222 1169 3180 16 778 506 2688 3970 4114 3073 3387 601 3410 2286 2524 2864 2542 931 2925 557 1479 442 3222 4431 669 3451 2366 1288 4640 2998 690 615 1056 307 2526 4416 3374 2651 4283 2315 4548 3120 3112 680 4406 3611 4410 2901 355 4811 4264 280 683 1303 4189 2574 3514 3472 2657 2789 2608 978 662 331 4280 141 4204 4321 4094 4343 4294 4714 3544 4334 4300 269 561 3622 2967 2604 2693 3136 4169 384 4258 2767 4349 4301 2060 651 1264 3630 3258 2636 985 4214 187 3330 2573 4391 4220 410 4493 
 
  ----------------------------- 
-
-File = instances/groupB/jazz.net
-Loading graph...
-N vertices = 198
-N edges = 2742
-
-File = instances/groupB/karate.gml
-Loading graph...
-N vertices = 34
-N edges = 78
