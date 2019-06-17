@@ -1,0 +1,23 @@
+instance,n_vertices,n_edges,density,obs
+Amazon0302.txt,262111,899792,2.6194E-05,"P1, P2, P3"
+BlogCatalog-dataset.csv,10312,333983,6.2822E-03,-
+BuzzNet-dataset.csv,101168,2763066,5.3993E-04,"P1, P2"
+CA-AstroPh.txt,18772,198110,1.1244E-03,P1
+CA-CondMat.txt,23133,93497,3.4945E-04,P1
+CA-GrQc.txt,5242,14496,1.0553E-03,P1
+CA-HepPh.txt,12008,118521,1.6441E-03,P1
+CA-HepTh.txt,9877,25998,5.3304E-04,P1
+Cit-HepTh.txt,27770,352324,9.1377E-04,"P1, P2"
+Delicious-dataset.csv,536408,1366663,9.4995E-06,"P1, P2, P4"
+Douban-dataset.csv,154908,327162,2.7268E-05,"P1, P4"
+facebook_combined.txt,4039,88234,1.0820E-02,-
+jazz.net,198,2742,1.4059E-01,P1
+karate.gml,34,78,1.3904E-01,-
+Last.fm-dataset.csv,1191812,4519349,6.3634E-06,"P1, P2, P4"
+power.gml,4941,6594,5.4030E-04,-
+YouTube-dataset.csv,1138499,2990443,4.6142E-06,-
+,,,,
+P1,Arestas múltiplas,,,
+P2,Cordasco não removeu arestas múltiplas,,,
+P3,Existem vértices que não tem vizinhos,,,
+P4,Inconsistência na entrada,,,
