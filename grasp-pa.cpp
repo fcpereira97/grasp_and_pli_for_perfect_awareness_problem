@@ -150,7 +150,7 @@ void initialize_vertices(int n_vertices, Vertex **vertices)
 	for(int i = 0; i < n_vertices; i++)
 	{
 		vertices[i]-> degree = vertices[i]-> neighbors.size();
-		vertices[i]-> threshold = floor((double)vertices[i]-> degree / 2.0);
+		vertices[i]-> threshold = ceil((double)vertices[i]-> degree / 2.0);
 	}
 	erase_propagation(n_vertices, vertices);
 }
