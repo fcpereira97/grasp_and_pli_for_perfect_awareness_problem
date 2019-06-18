@@ -1,0 +1,43 @@
+
+File = instances/groupB/jazz.net
+Loading graph...
+N vertices = 198
+N edges = 2742
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 14
+[Iteration 25] New incumbent solution found! Solution value = 13
+
+Number of iterations = 286802
+Mean of solution values = 15.065659
+
+Best solution found:
+Solution value = 13
+Number of rounds = 1
+Number of aware nodes = 198
+Iteration = 25
+
+Seed set = 66 132 31 53 2 30 78 27 69 114 174 34 162 
+
+ ----------------------------- 
+
+File = instances/groupB/karate.gml
+Loading graph...
+N vertices = 34
+N edges = 78
+Graph loaded!
+
+[Iteration 1] New incumbent solution found! Solution value = 3
+
+Number of iterations = 4190706
+Mean of solution values = 3.418935
+
+Best solution found:
+Solution value = 3
+Number of rounds = 4
+Number of aware nodes = 34
+Iteration = 1
+
+Seed set = 0 23 6 
+
+ ----------------------------- 
