@@ -1,0 +1,51 @@
+Academic license - for non-commercial use only
+Optimizing Gurobi model...
+Optimize a model with 3400 rows, 1156 columns and 16096 nonzeros
+Variable types: 0 continuous, 1156 integer (1156 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 9e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 8e+00]
+Found heuristic solution: objective 15.0000000
+Presolve removed 36 rows and 12 columns
+Presolve time: 0.05s
+Presolved: 3364 rows, 1144 columns, 15990 nonzeros
+Variable types: 0 continuous, 1144 integer (1144 binary)
+
+Root relaxation: objective 2.182075e-08, 2402 iterations, 0.29 seconds
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0    0.00000    0  715   15.00000    0.00000   100%     -    0s
+     0     0    0.00000    0  714   15.00000    0.00000   100%     -    0s
+     0     0    0.00000    0  721   15.00000    0.00000   100%     -    0s
+     0     0    0.00000    0  724   15.00000    0.00000   100%     -    1s
+     0     0    0.00000    0  724   15.00000    0.00000   100%     -    1s
+     0     0    0.00000    0  756   15.00000    0.00000   100%     -    1s
+     0     0    0.00000    0  764   15.00000    0.00000   100%     -    1s
+     0     0    0.00000    0  737   15.00000    0.00000   100%     -    1s
+     0     0    0.00000    0  734   15.00000    0.00000   100%     -    1s
+     0     2    0.00000    0  734   15.00000    0.00000   100%     -    1s
+H  246   144                       7.0000000    0.00788   100%  96.6    4s
+H  273   147                       4.0000000    0.00788   100%  90.4    4s
+*  284   148              40       3.0000000    0.00788   100%  88.5    4s
+   335   160    0.63733   16  385    3.00000    0.02538  99.2%  98.5    5s
+   513   246    1.00000   13  738    3.00000    0.15242  94.9%   117   12s
+   516   250    0.15242   15  720    3.00000    0.15242  94.9%   121   15s
+   562   268    0.15242   19  659    3.00000    0.15242  94.9%   145   20s
+   866   206    1.00000   19  250    3.00000    0.82033  72.7%   125   25s
+  1239    98 infeasible   25         3.00000    1.00000  66.7%   116   30s
+  1489   126    1.00000   22  115    3.00000    1.00000  66.7%   119   35s
+  1741   139    1.00000   26  279    3.00000    1.00000  66.7%   119   40s
+  2020   132    1.00039   33  554    3.00000    1.00039  66.7%   118   45s
+  2260   106 infeasible   30         3.00000    1.07703  64.1%   121   50s
+
+Explored 2393 nodes (298131 simplex iterations) in 51.74 seconds
+Thread count was 1 (of 4 available processors)
+
+Solution count 4: 3 4 7 15 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 3.000000000000e+00, best bound 3.000000000000e+00, gap 0.0000%
