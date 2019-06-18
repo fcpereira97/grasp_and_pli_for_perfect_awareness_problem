@@ -93,13 +93,3 @@ File = instances/groupC/YouTube-dataset.csv
 Loading graph...
 N vertices = 1138499
 N edges = 2990443
-
-File = instances/groupC/YouTube-dataset.csv
-Loading graph...
-N vertices = 1138499
-N edges = 2990443
-
-File = instances/groupC/YouTube-dataset.csv
-Loading graph...
-N vertices = 1138499
-N edges = 2990443

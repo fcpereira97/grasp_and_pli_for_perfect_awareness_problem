@@ -95,11 +95,6 @@ File = instances/groupC/YouTube-dataset.csv
 Loading graph...
 N vertices = 1138499
 N edges = 2990443
-
-File = instances/groupC/YouTube-dataset.csv
-Loading graph...
-N vertices = 1138499
-N edges = 2990443
 Graph loaded!
 
 [Iteration 1] New incumbent solution found! Solution value = 39585
