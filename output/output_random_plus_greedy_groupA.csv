@@ -2,3 +2,9 @@
 2, 2, instances/groupA/BuzzNet-dataset.csv, 13, 139.000000, 135, 3, 101168, 10
 2, 2, instances/groupA/CA-AstroPh.txt, 37, 1860.567568, 1698, 468, 18772, 23
 2, 2, instances/groupA/CA-CondMat.txt, 41, 2148.487805, 2113, 714, 23133, 6
+2, 2, instances/groupA/CA-GrQc.txt, 758, 764.610818, 752, 142, 5242, 242
+2, 2, instances/groupA/CA-HepPh.txt, 122, 1239.663934, 1210, 329, 12008, 100
+2, 2, instances/groupA/CA-HepTh.txt, 226, 1134.261062, 1113, 295, 9877, 183
+2, 2, instances/groupA/Cit-HepTh.txt, 26, 2523.730769, 2461, 451, 27770, 18
+2, 2, instances/groupA/facebook_combined.txt, 15227, 10.000000, 10, 1, 4039, 1
+2, 2, instances/groupA/power.gml, 1005, 592.957214, 578, 69, 4941, 567
